@@ -1,5 +1,7 @@
 import io
 import json
+from pathlib import Path
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from datetime import date, timedelta
@@ -44,6 +46,24 @@ class CliTests(unittest.TestCase):
         payload = json.loads(output.getvalue())
         self.assertEqual(exit_code, 2)
         self.assertEqual(payload["status"], "error")
+
+    def test_catalog_command_is_machine_readable(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            exit_code = main(["catalog"])
+        payload = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertGreaterEqual(payload["field_count"], 23)
+        self.assertIn("category.identity", {field["id"] for field in payload["fields"]})
+
+    def test_init_db_command_creates_database(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "research.sqlite3"
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = main(["init-db", str(path)])
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(path.exists())
 
 
 if __name__ == "__main__":

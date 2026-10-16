@@ -1,0 +1,14 @@
+[
+  {
+    "SecuritiesCompanyCode": "6488",
+    "ForeignInvestorsBuy": "2,000,000",
+    "ForeignInvestorsSell": "1,700,000",
+    "ForeignInvestorsDifference": "300,000",
+    "InvestmentTrustBuy": "400,000",
+    "InvestmentTrustSell": "250,000",
+    "InvestmentTrustDifference": "150,000",
+    "DealerBuy": "180,000",
+    "DealerSell": "200,000",
+    "DealerDifference": "-20,000"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "Code": "2330",
+    "Name": "台積電",
+    "TradeVolume": "30,123,456",
+    "TradeValue": "30,987,654,321",
+    "OpeningPrice": "1,020.00",
+    "HighestPrice": "1,035.00",
+    "LowestPrice": "1,010.00",
+    "ClosingPrice": "1,030.00",
+    "Change": "+15.00",
+    "Transaction": "45,678"
+  }
+]

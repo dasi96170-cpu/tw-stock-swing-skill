@@ -70,11 +70,34 @@ python3 -m compileall -q src tests
 
 核心測試使用固定的合成行情，不依賴網路，因此可以穩定驗證計算與策略行為。
 
+## 研究資料基礎
+
+第一批深度研究基礎已加入：
+
+- [`DATA_CATALOG.toml`](DATA_CATALOG.toml)：23 大資料族群閘門及第一批欄位級契約。
+- [`SOURCE_CATALOG.toml`](SOURCE_CATALOG.toml)：官方來源、端點、保存政策與驗證狀態。
+- [`TRACEABILITY.toml`](TRACEABILITY.toml)／[`TRACEABILITY.md`](TRACEABILITY.md)：需求到程式與測試的映射。
+- [`SOURCE_VALIDATION.md`](SOURCE_VALIDATION.md)：官方端點驗證證據與尚未完成項目。
+- SQLite 三時間觀察值、證據帳本、coverage 狀態與 schema migration。
+- 證交所／櫃買中心的行情、成交、法人及融資券六個連接器。
+
+```bash
+PYTHONPATH=src python3 -m tw_stock_swing catalog
+PYTHONPATH=src python3 -m tw_stock_swing sources
+PYTHONPATH=src python3 -m tw_stock_swing sources --live
+PYTHONPATH=src python3 -m tw_stock_swing init-db research.sqlite3
+```
+
+目標系統、已完成範圍與後續不得遺漏的需求詳見 [`REQUIREMENTS.md`](REQUIREMENTS.md)。
+
 ## 專案結構
 
 ```text
 SKILL.md                       Codex Skill 操作與回答規範
 REQUIREMENTS.md                深度研究目標、資料範圍與驗收規格
+DATA_CATALOG.toml              機器可讀研究欄位契約
+SOURCE_CATALOG.toml            來源、端點與授權驗證狀態
+TRACEABILITY.toml/.md          需求、程式與測試追蹤矩陣
 src/tw_stock_swing/            Python 分析引擎及 CLI
 src/tw_stock_swing/default_watchlist.txt  MVP 預設觀察清單
 tests/                         離線單元測試

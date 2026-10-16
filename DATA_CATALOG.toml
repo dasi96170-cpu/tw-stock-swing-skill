@@ -1,0 +1,580 @@
+[catalog]
+version = "0.1.0"
+timezone = "Asia/Taipei"
+status_values = ["available", "computed", "missing", "stale", "failed", "restricted", "not_applicable", "conflicting", "unverified"]
+priority_values = ["P0", "P1", "P2"]
+
+# category_gate 是 23 大資料族群的不可遺漏閘門。尚未展開的族群也必須在 coverage
+# 中出現，不能因為尚未實作就從報告消失。
+[[fields]]
+id = "category.identity"
+name = "股票與公司身分"
+category = "identity"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "每次研究"
+implementation = "partial"
+sources = ["twse_openapi", "tpex_openapi", "mops"]
+
+[[fields]]
+id = "category.market"
+name = "價格與成交資料"
+category = "market"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日"
+implementation = "partial"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "category.volume_structure"
+name = "成交量、量價與市場微結構"
+category = "volume_structure"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日"
+implementation = "planned"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "category.technical"
+name = "技術面與價格統計"
+category = "technical"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日"
+implementation = "partial"
+sources = ["computed"]
+
+[[fields]]
+id = "category.institutional"
+name = "三大法人"
+category = "institutional"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日"
+implementation = "partial"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "category.margin"
+name = "融資、融券、借券與當沖"
+category = "margin"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日"
+implementation = "partial"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "category.ownership"
+name = "股權結構與大戶"
+category = "ownership"
+priority = "P1"
+kind = "category_gate"
+unit = "status"
+freshness = "週或事件"
+implementation = "planned"
+sources = ["tdcc", "mops"]
+
+[[fields]]
+id = "category.revenue"
+name = "月營收"
+category = "revenue"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "月"
+implementation = "planned"
+sources = ["mops"]
+
+[[fields]]
+id = "category.income_statement"
+name = "損益表"
+category = "income_statement"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "季"
+implementation = "planned"
+sources = ["mops"]
+
+[[fields]]
+id = "category.balance_sheet"
+name = "資產負債表"
+category = "balance_sheet"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "季"
+implementation = "planned"
+sources = ["mops"]
+
+[[fields]]
+id = "category.cash_flow"
+name = "現金流量表"
+category = "cash_flow"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "季"
+implementation = "planned"
+sources = ["mops"]
+
+[[fields]]
+id = "category.financial_quality"
+name = "財務品質與安全性"
+category = "financial_quality"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "季"
+implementation = "planned"
+sources = ["computed", "mops"]
+
+[[fields]]
+id = "category.valuation"
+name = "估值與市場預期"
+category = "valuation"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日或事件"
+implementation = "planned"
+sources = ["twse_openapi", "tpex_openapi", "computed"]
+
+[[fields]]
+id = "category.operations"
+name = "公司營運與產品"
+category = "operations"
+priority = "P1"
+kind = "category_gate"
+unit = "status"
+freshness = "事件"
+implementation = "planned"
+sources = ["mops", "company_ir"]
+
+[[fields]]
+id = "category.corporate_actions"
+name = "公司行動"
+category = "corporate_actions"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "事件"
+implementation = "planned"
+sources = ["mops", "twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "category.governance"
+name = "公司治理與管理層"
+category = "governance"
+priority = "P1"
+kind = "category_gate"
+unit = "status"
+freshness = "事件"
+implementation = "planned"
+sources = ["mops", "company_ir"]
+
+[[fields]]
+id = "category.material_events"
+name = "重大訊息與法規風險"
+category = "material_events"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "每次研究"
+implementation = "planned"
+sources = ["mops", "twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "category.news"
+name = "新聞與非結構化資料"
+category = "news"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "每次研究"
+implementation = "planned"
+sources = ["official_news", "licensed_news"]
+
+[[fields]]
+id = "category.supply_chain"
+name = "產業與供應鏈"
+category = "supply_chain"
+priority = "P1"
+kind = "category_gate"
+unit = "status"
+freshness = "事件"
+implementation = "planned"
+sources = ["company_ir", "official_statistics"]
+
+[[fields]]
+id = "category.industry_specific"
+name = "產業專屬資料"
+category = "industry_specific"
+priority = "P1"
+kind = "category_gate"
+unit = "status"
+freshness = "依模板"
+implementation = "planned"
+sources = ["industry_official"]
+
+[[fields]]
+id = "category.peers"
+name = "同業比較"
+category = "peers"
+priority = "P1"
+kind = "category_gate"
+unit = "status"
+freshness = "每次研究"
+implementation = "planned"
+sources = ["computed"]
+
+[[fields]]
+id = "category.macro_derivatives"
+name = "大盤、國際、衍生品與被動資金"
+category = "macro_derivatives"
+priority = "P0"
+kind = "category_gate"
+unit = "status"
+freshness = "交易日"
+implementation = "planned"
+sources = ["twse_openapi", "tpex_openapi", "taifex"]
+
+[[fields]]
+id = "category.alternative"
+name = "政府與替代公開資料"
+category = "alternative"
+priority = "P2"
+kind = "category_gate"
+unit = "status"
+freshness = "有線索時"
+implementation = "planned"
+sources = ["government_open_data"]
+
+# 第一批官方連接器的欄位級契約。
+[[fields]]
+id = "identity.symbol"
+name = "股票代號"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "text"
+freshness = "每次研究"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "identity.name"
+name = "股票名稱"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "text"
+freshness = "每次研究"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.open"
+name = "開盤價"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "TWD/share"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.high"
+name = "最高價"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "TWD/share"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.low"
+name = "最低價"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "TWD/share"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.close"
+name = "收盤價"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "TWD/share"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.change"
+name = "漲跌價差"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "TWD/share"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.volume"
+name = "成交股數"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.value"
+name = "成交金額"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "TWD"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "market.transactions"
+name = "成交筆數"
+category = "market"
+priority = "P0"
+kind = "observation"
+unit = "trades"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.foreign.buy"
+name = "外資買進股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.foreign.sell"
+name = "外資賣出股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.foreign.net"
+name = "外資買賣超股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.trust.buy"
+name = "投信買進股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.trust.sell"
+name = "投信賣出股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.trust.net"
+name = "投信買賣超股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.dealer.buy"
+name = "自營商買進股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.dealer.sell"
+name = "自營商賣出股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "institutional.dealer.net"
+name = "自營商買賣超股數"
+category = "institutional"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.financing.previous_balance"
+name = "融資前日餘額"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.financing.buy"
+name = "融資買進"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.financing.sell"
+name = "融資賣出"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.financing.cash_redemption"
+name = "融資現金償還"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.financing.balance"
+name = "融資今日餘額"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.short.previous_balance"
+name = "融券前日餘額"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.short.sell"
+name = "融券賣出"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.short.buy"
+name = "融券買進"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.short.stock_redemption"
+name = "融券現券償還"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "margin.short.balance"
+name = "融券今日餘額"
+category = "margin"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "交易日"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]

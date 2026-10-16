@@ -1,0 +1,66 @@
+[matrix]
+version = "0.1.0"
+
+[[requirements]]
+id = "REQ-DATA-001"
+statement = "23 大資料族群都必須出現在機器可讀目錄且有狀態"
+catalog_prefixes = ["category."]
+implementation = ["src/tw_stock_swing/catalog.py", "src/tw_stock_swing/coverage.py"]
+tests = ["test_catalog_has_all_23_requirement_categories", "test_coverage_never_silently_omits_catalog_items"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-DATA-002"
+statement = "第一批行情、成交、法人、融資券欄位有唯一 ID、單位、優先級與來源"
+catalog_prefixes = ["identity.", "market.", "institutional.", "margin."]
+implementation = ["DATA_CATALOG.toml", "src/tw_stock_swing/sources/"]
+tests = ["test_catalog_fields_are_unique_and_valid", "test_connector_contract_fields_exist_in_catalog"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-SOURCE-001"
+statement = "證交所與櫃買中心官方端點、授權檢查狀態、更新、歷史與 fallback 可追蹤"
+catalog_prefixes = ["category.market", "category.institutional", "category.margin"]
+implementation = ["SOURCE_CATALOG.toml", "src/tw_stock_swing/sources/official.py"]
+tests = ["test_source_catalog_has_official_endpoints", "test_fixture_payloads_match_connector_contracts"]
+status = "partial_network_blocked"
+
+[[requirements]]
+id = "REQ-TIME-001"
+statement = "觀察值保存 valid_time、known_at、system_recorded_at 且修正不覆蓋舊版"
+catalog_prefixes = ["category."]
+implementation = ["src/tw_stock_swing/storage.py"]
+tests = ["test_observation_revisions_are_append_only", "test_as_of_query_excludes_later_known_data"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-EVIDENCE-001"
+statement = "證據帳本保存主張類型、立場、來源、時間與品質維度"
+catalog_prefixes = ["category."]
+implementation = ["src/tw_stock_swing/storage.py"]
+tests = ["test_evidence_ledger_preserves_quality_dimensions"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-COVERAGE-001"
+statement = "每個目錄項目恰有一個合法狀態；缺值、未實作與抓取失敗不得靜默消失"
+catalog_prefixes = ["category.", "identity.", "market.", "institutional.", "margin."]
+implementation = ["src/tw_stock_swing/coverage.py", "src/tw_stock_swing/storage.py"]
+tests = ["test_coverage_never_silently_omits_catalog_items", "test_missing_p0_field_fails_strict_coverage"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-COMPAT-001"
+statement = "現有 analyze 與 scan CLI 不被破壞"
+catalog_prefixes = []
+implementation = ["src/tw_stock_swing/cli.py"]
+tests = ["tests/test_cli.py", "tests/test_analysis.py"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-FUTURE-001"
+statement = "名詞公式、回測、交易制度、風險契約、安全、法律、產業模板與量化驗收需後續展開"
+catalog_prefixes = ["category.technical", "category.industry_specific", "category.alternative"]
+implementation = ["REQUIREMENTS.md"]
+tests = []
+status = "planned"

@@ -1,0 +1,14 @@
+[
+  {
+    "SecuritiesCompanyCode": "6488",
+    "CompanyName": "環球晶",
+    "TradingShares": "2,345,000",
+    "TransactionAmount": "987,654,000",
+    "Open": "421.00",
+    "High": "428.00",
+    "Low": "418.00",
+    "Close": "425.00",
+    "Change": "+6.00",
+    "TransactionNumber": "3,456"
+  }
+]

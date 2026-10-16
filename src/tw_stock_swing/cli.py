@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Sequence
 
 from .analysis import analyze_bars
+from .catalog import load_catalog, load_source_catalog
 from .formatting import format_analysis
 from .models import AnalysisResult
 from .providers import DataProviderError, YahooFinanceProvider
+from .sources import ConnectorError, OFFICIAL_CONNECTORS
+from .storage import ResearchDatabase
 
 
 DEFAULT_WATCHLIST = Path(__file__).with_name("default_watchlist.txt")
@@ -113,6 +117,79 @@ def _run_scan(args: argparse.Namespace) -> int:
     return 0 if results else 2
 
 
+def _run_catalog(args: argparse.Namespace) -> int:
+    catalog = load_catalog()
+    payload = {
+        "version": catalog.version,
+        "timezone": catalog.timezone,
+        "field_count": len(catalog.fields),
+        "fields": [
+            {
+                "id": field.id,
+                "name": field.name,
+                "category": field.category,
+                "priority": field.priority,
+                "kind": field.kind,
+                "unit": field.unit,
+                "freshness": field.freshness,
+                "implementation": field.implementation,
+                "sources": list(field.sources),
+            }
+            for field in catalog.fields
+        ],
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _run_sources(args: argparse.Namespace) -> int:
+    source_catalog = load_source_catalog()
+    payload: dict[str, object] = {
+        "checked_at": source_catalog["catalog"]["checked_at"],
+        "validation_note": source_catalog["catalog"]["validation_note"],
+        "sources": source_catalog["sources"],
+    }
+    exit_code = 0
+    if args.live:
+        results: dict[str, object] = {}
+        for connector_id, connector in OFFICIAL_CONNECTORS.items():
+            symbol = "2330" if connector.source_id == "twse_openapi" else "6488"
+            try:
+                result = connector.fetch_safe(symbol, timeout=args.timeout)
+                if result.error:
+                    results[connector_id] = {
+                        "status": "failed",
+                        "error": result.error,
+                        "field_statuses": {item.field_id: item.status for item in result.coverage},
+                    }
+                    exit_code = 2
+                    continue
+                results[connector_id] = {
+                    "status": "ok",
+                    "observations": len(result.observations),
+                    "missing": [item.field_id for item in result.coverage if item.status != "available"],
+                    "fetched_at": result.fetched_at.isoformat(),
+                }
+            except ConnectorError as exc:
+                results[connector_id] = {"status": "failed", "error": str(exc)}
+                exit_code = 2
+        payload["live"] = results
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return exit_code
+
+
+def _run_init_db(args: argparse.Namespace) -> int:
+    path = Path(args.database)
+    try:
+        with ResearchDatabase(path) as database:
+            database.migrate()
+    except (OSError, ValueError, sqlite3.Error) as exc:
+        print(json.dumps(_error_payload(str(exc)), ensure_ascii=False, indent=2))
+        return 2
+    print(json.dumps({"status": "ok", "database": str(path), "schema_version": 1}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="台股短線波段分析工具")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -131,6 +208,18 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("--timeout", type=float, default=15.0, help="每個資料請求逾時秒數")
     scan_parser.add_argument("--json", action="store_true", help="輸出 JSON")
     scan_parser.set_defaults(handler=_run_scan)
+
+    catalog_parser = subparsers.add_parser("catalog", help="輸出機器可讀研究資料目錄")
+    catalog_parser.set_defaults(handler=_run_catalog)
+
+    sources_parser = subparsers.add_parser("sources", help="列出官方資料來源與驗證狀態")
+    sources_parser.add_argument("--live", action="store_true", help="實際請求六個官方端點")
+    sources_parser.add_argument("--timeout", type=float, default=20.0, help="資料請求逾時秒數")
+    sources_parser.set_defaults(handler=_run_sources)
+
+    database_parser = subparsers.add_parser("init-db", help="建立或升級 SQLite 研究資料庫")
+    database_parser.add_argument("database", help="SQLite 檔案路徑")
+    database_parser.set_defaults(handler=_run_init_db)
     return parser
 
 
