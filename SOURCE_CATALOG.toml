@@ -1,7 +1,7 @@
 [catalog]
 version = "0.2.0"
-checked_at = "2026-10-16T20:24:00+08:00"
-validation_note = "六個連接器中五個已通過 live 驗證；TWSE 個股法人改用 www.twse.com.tw 官方 T86 JSON，待新增網域草稿發布後驗證。"
+checked_at = "2026-10-16T20:53:06+08:00"
+validation_note = "六個官方連接器均已取得真實資料並通過 live schema 驗證；本次補齊 TWSE 個股法人 T86 的 9/9 欄位。"
 
 [[sources]]
 id = "twse_openapi"
@@ -16,7 +16,7 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "partial_2_of_3"
+live_validation = "validated_3_of_3"
 
 [[sources.endpoints]]
 id = "twse.market.daily_all"
