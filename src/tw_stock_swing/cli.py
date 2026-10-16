@@ -10,9 +10,10 @@ from typing import Sequence
 
 from .analysis import analyze_bars
 from .catalog import load_catalog, load_source_catalog
-from .formatting import format_analysis
+from .formatting import format_analysis, format_research
 from .models import AnalysisResult
 from .providers import DataProviderError, YahooFinanceProvider
+from .research import research_stock
 from .sources import ConnectorError, OFFICIAL_CONNECTORS
 from .storage import ResearchDatabase
 
@@ -64,6 +65,27 @@ def _run_analyze(args: argparse.Namespace) -> int:
         print(json.dumps({"status": "ok", "analysis": result.to_dict()}, ensure_ascii=False, indent=2))
     else:
         print(format_analysis(result))
+    return 0
+
+
+def _run_research(args: argparse.Namespace) -> int:
+    provider = YahooFinanceProvider(timeout=args.timeout)
+    try:
+        report = research_stock(args.symbol, timeout=args.timeout, provider=provider)
+    except (ValueError, DataProviderError) as exc:
+        payload = _error_payload(str(exc))
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else f"錯誤：{exc}")
+        return 2
+    if args.json:
+        print(
+            json.dumps(
+                {"status": report.status, "research": report.to_dict()},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    else:
+        print(format_research(report))
     return 0
 
 
@@ -199,6 +221,12 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--timeout", type=float, default=15.0, help="資料請求逾時秒數")
     analyze_parser.add_argument("--json", action="store_true", help="輸出 JSON")
     analyze_parser.set_defaults(handler=_run_analyze)
+
+    research_parser = subparsers.add_parser("research", help="整合官方資料研究單一股票")
+    research_parser.add_argument("symbol", help="例如 2330、2330.TW 或 6488.TWO")
+    research_parser.add_argument("--timeout", type=float, default=20.0, help="每個資料請求逾時秒數")
+    research_parser.add_argument("--json", action="store_true", help="輸出完整 JSON 與 coverage")
+    research_parser.set_defaults(handler=_run_research)
 
     scan_parser = subparsers.add_parser("scan", help="掃描並排序多檔股票")
     scan_parser.add_argument("symbols", nargs="*", help="指定代號；未指定時使用預設清單")

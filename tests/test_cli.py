@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from datetime import date, timedelta
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from tw_stock_swing.cli import main
@@ -55,6 +56,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertGreaterEqual(payload["field_count"], 23)
         self.assertIn("category.identity", {field["id"] for field in payload["fields"]})
+
+    @patch("tw_stock_swing.cli.research_stock")
+    def test_research_json_contract(self, research: object) -> None:
+        research.return_value = SimpleNamespace(  # type: ignore[attr-defined]
+            status="partial",
+            to_dict=lambda: {"symbol": "2330.TW", "market": "TWSE", "warnings": ["fixture"]},
+        )
+        output = io.StringIO()
+        with redirect_stdout(output):
+            exit_code = main(["research", "2330", "--json"])
+        payload = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["status"], "partial")
+        self.assertEqual(payload["research"]["symbol"], "2330.TW")
 
     def test_init_db_command_creates_database(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

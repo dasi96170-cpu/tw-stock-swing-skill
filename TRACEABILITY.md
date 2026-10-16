@@ -10,6 +10,7 @@
 | REQ-TIME-001 | Point-in-time 與修正版不可覆蓋 | `storage.py` | append-only 與 as-of 測試 | 已完成第一版 |
 | REQ-EVIDENCE-001 | 證據帳本及品質維度 | `storage.py` | 品質七維保存測試 | 已完成第一版 |
 | REQ-COVERAGE-001 | 每項恰有一個合法狀態 | `coverage.py`、`storage.py` | 漏項補狀態、未知/重複拒絕、P0 嚴格閘門 | 已完成第一版 |
+| REQ-RESEARCH-001 | 單股研究整合技術、官方行情、法人、融資券與缺口 | `research.py`、`formatting.py`、`cli.py` | 上市／上櫃路由、部分失敗、文字與 JSON 契約測試 | 已完成第一版 |
 | REQ-COMPAT-001 | 不破壞既有 analyze/scan | `cli.py` | 原有 CLI 與分析測試 | 已完成 |
 | REQ-FUTURE-001 | 公式、回測、制度、安全、法律等深化 | `REQUIREMENTS.md` §14 | 後續逐項建立量化驗收 | 待辦 |
 

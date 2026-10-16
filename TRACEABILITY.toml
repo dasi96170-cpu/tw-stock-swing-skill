@@ -1,5 +1,5 @@
 [matrix]
-version = "0.1.0"
+version = "0.2.0"
 
 [[requirements]]
 id = "REQ-DATA-001"
@@ -47,6 +47,14 @@ statement = "每個目錄項目恰有一個合法狀態；缺值、未實作與�
 catalog_prefixes = ["category.", "identity.", "market.", "institutional.", "margin."]
 implementation = ["src/tw_stock_swing/coverage.py", "src/tw_stock_swing/storage.py"]
 tests = ["test_coverage_never_silently_omits_catalog_items", "test_missing_p0_field_fails_strict_coverage"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-RESEARCH-001"
+statement = "單股研究指令整合歷史技術分析、官方行情、法人、融資券、來源健康與完整缺口揭露"
+catalog_prefixes = ["category.", "identity.", "market.", "institutional.", "margin."]
+implementation = ["src/tw_stock_swing/research.py", "src/tw_stock_swing/formatting.py", "src/tw_stock_swing/cli.py"]
+tests = ["tests/test_research.py", "test_research_json_contract"]
 status = "implemented"
 
 [[requirements]]

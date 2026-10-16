@@ -450,6 +450,9 @@
 
 ## 10. 預計命令介面
 
+目前已實作 `tw-stock-swing research 2330 [--json]` 的第一版；`--depth` 與其餘命令仍是
+後續介面規劃：
+
 ```bash
 tw-stock-swing research 2330 --depth exhaustive
 tw-stock-swing coverage 2330
@@ -494,7 +497,8 @@ tw-stock-swing backtest --strategy swing
 目前已完成：Codex Skill 基本入口、Yahoo 日線資料、部分技術指標、簡單量價評分、交易
 計畫、CLI、23 類 category gate 與第一批欄位的機器可讀目錄、需求追蹤矩陣、SQLite
 三時間觀察值與證據帳本、證交所／櫃買中心行情、法人及融資券連接器的離線格式驗證，
-六個官方連接器的 live schema 驗證，以及不可靜默漏項測試。
+六個官方連接器的 live schema 驗證、不可靜默漏項測試，以及整合日線技術、官方行情、
+法人、融資券、來源健康與 coverage 的第一版 `research <股票代號>` 單股研究指令。
 
 尚未完成：23 大類的全部欄位、公開資訊觀測站等後續連接器、完整研究流程、開放式研究、
 多空與反方驗證、新聞與供應鏈、Point-in-time 回測、校準、研究差異及失敗追蹤。不得在
