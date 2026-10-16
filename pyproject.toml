@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tw-stock-swing"
+version = "0.1.0"
+description = "Codex Skill and deterministic Python engine for Taiwan stock swing analysis"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "tw-stock-swing-skill contributors" }]
+dependencies = []
+
+[project.scripts]
+tw-stock-swing = "tw_stock_swing.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tw_stock_swing = ["py.typed", "default_watchlist.txt"]
