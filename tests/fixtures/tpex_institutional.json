@@ -1,14 +1,17 @@
 [
   {
+    "Date": "1151016",
     "SecuritiesCompanyCode": "6488",
-    "ForeignInvestorsBuy": "2,000,000",
-    "ForeignInvestorsSell": "1,700,000",
-    "ForeignInvestorsDifference": "300,000",
-    "InvestmentTrustBuy": "400,000",
-    "InvestmentTrustSell": "250,000",
-    "InvestmentTrustDifference": "150,000",
-    "DealerBuy": "180,000",
-    "DealerSell": "200,000",
-    "DealerDifference": "-20,000"
+    "CompanyName": "環球晶",
+    "Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Total Buy": "3922489",
+    " Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Total Sell": "8379161",
+    "Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Difference": "-4456672",
+    "SecuritiesInvestmentTrustCompanies-TotalBuy": "246714",
+    "SecuritiesInvestmentTrustCompanies-TotalSell": "25000",
+    "SecuritiesInvestmentTrustCompanies-Difference": "221714",
+    "Dealers-TotalBuy": "1013997",
+    "Dealers-TotalSell": "1161430",
+    "Dealers-Difference": "-147433",
+    "TotalDifference": "-4382391"
   }
 ]

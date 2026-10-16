@@ -1,11 +1,11 @@
 [catalog]
-version = "0.1.0"
-checked_at = "2026-10-16T00:00:00Z"
-validation_note = "端點與官方網域已確認；目前執行環境因 egress policy 回傳 403，尚待發布 allowlist 後做 live schema 驗證。"
+version = "0.2.0"
+checked_at = "2026-10-16T20:24:00+08:00"
+validation_note = "六個連接器中五個已通過 live 驗證；TWSE 個股法人改用 www.twse.com.tw 官方 T86 JSON，待新增網域草稿發布後驗證。"
 
 [[sources]]
 id = "twse_openapi"
-name = "臺灣證券交易所 OpenAPI"
+name = "臺灣證券交易所官方資料服務"
 authority = "official"
 base_url = "https://openapi.twse.com.tw/v1"
 terms_url = "https://www.twse.com.tw/terms/"
@@ -16,7 +16,7 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "blocked_by_environment_policy"
+live_validation = "partial_2_of_3"
 
 [[sources.endpoints]]
 id = "twse.market.daily_all"
@@ -26,7 +26,7 @@ connector = "twse_market"
 
 [[sources.endpoints]]
 id = "twse.institutional.daily"
-path = "/fund/T86"
+path = "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999"
 categories = ["institutional"]
 connector = "twse_institutional"
 
@@ -49,7 +49,7 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "blocked_by_environment_policy"
+live_validation = "validated_3_of_3"
 
 [[sources.endpoints]]
 id = "tpex.market.daily_close"
@@ -65,7 +65,7 @@ connector = "tpex_institutional"
 
 [[sources.endpoints]]
 id = "tpex.margin.daily"
-path = "/tpex_margin_balancing"
+path = "/tpex_mainboard_margin_balance"
 categories = ["margin"]
 connector = "tpex_margin"
 

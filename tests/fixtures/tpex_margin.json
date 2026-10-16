@@ -1,15 +1,19 @@
 [
   {
+    "Date": "1151015",
     "SecuritiesCompanyCode": "6488",
-    "MarginPurchasePreviousBalance": "5,000,000",
-    "MarginPurchaseBuy": "300,000",
-    "MarginPurchaseSell": "250,000",
-    "MarginPurchaseCashRedemption": "10,000",
-    "MarginPurchaseCurrentBalance": "5,040,000",
-    "ShortSalePreviousBalance": "100,000",
-    "ShortSaleSell": "20,000",
-    "ShortSaleBuy": "15,000",
-    "ShortSaleStockRedemption": "1,000",
-    "ShortSaleCurrentBalance": "104,000"
+    "CompanyName": "環球晶",
+    "MarginPurchaseBalancePreviousDay": "15796",
+    "MarginPurchase": "1040",
+    "MarginSales": "2841",
+    "CashRedemption": "18",
+    "MarginPurchaseBalance": "13977",
+    "ShortSaleBalancePreviousDay": "422",
+    "ShortSale": "14",
+    "ShortConvering": "151",
+    "StockRedemption": "0",
+    "ShortSaleBalance": "285",
+    "Offsetting": "11",
+    "Note": ""
   }
 ]

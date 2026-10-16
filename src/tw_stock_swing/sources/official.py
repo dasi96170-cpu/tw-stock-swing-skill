@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import gzip
+from http.client import IncompleteRead
 import json
 import math
 import re
 from typing import Any, Callable, Mapping, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 from ..coverage import CoverageEntry
 
@@ -44,24 +47,32 @@ class FieldMapping:
     unit: str
     aliases: tuple[str, ...]
     numeric: bool = True
+    empty_is_zero: bool = False
 
 
 Fetcher = Callable[[str, float], bytes]
 
 
 def _default_fetcher(url: str, timeout: float) -> bytes:
-    request = Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "tw-stock-swing/0.1 (+research; on-demand)",
-        },
-    )
-    try:
-        with urlopen(request, timeout=timeout) as response:
-            return response.read()
-    except (HTTPError, URLError, TimeoutError, OSError) as exc:
-        raise ConnectorError(f"官方來源請求失敗 {url}: {exc}") from exc
+    last_error: Exception | None = None
+    for _attempt in range(3):
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "Accept-Encoding": "gzip",
+                "User-Agent": "tw-stock-swing/0.1 (+research; on-demand)",
+            },
+        )
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                payload = response.read()
+                if response.headers.get("Content-Encoding", "").lower() == "gzip":
+                    payload = gzip.decompress(payload)
+                return payload
+        except (HTTPError, URLError, TimeoutError, OSError, IncompleteRead) as exc:
+            last_error = exc
+    raise ConnectorError(f"官方來源請求失敗 {url}: {last_error}") from last_error
 
 
 _EMPTY_VALUES = {"", "--", "---", "N/A", "null", "None", "除權息", "除息", "除權"}
@@ -90,6 +101,23 @@ def _first(record: Mapping[str, Any], aliases: Sequence[str]) -> Any:
         if alias in record:
             return record[alias]
     return None
+
+
+def _valid_time(record: Mapping[str, Any], fallback: datetime) -> datetime:
+    raw = _first(record, ("Date", "日期", "資料日期"))
+    if raw is None:
+        return fallback
+    digits = re.sub(r"\D", "", str(raw))
+    try:
+        if len(digits) == 7:
+            year, month, day = int(digits[:3]) + 1911, int(digits[3:5]), int(digits[5:])
+        elif len(digits) == 8:
+            year, month, day = int(digits[:4]), int(digits[4:6]), int(digits[6:])
+        else:
+            return fallback
+        return datetime(year, month, day, tzinfo=ZoneInfo("Asia/Taipei"))
+    except ValueError:
+        return fallback
 
 
 class OfficialTabularConnector:
@@ -150,7 +178,19 @@ class OfficialTabularConnector:
         if fetched_at.tzinfo is None:
             raise ValueError("fetched_at 必須包含時區")
         if isinstance(payload, dict):
+            if payload.get("stat") not in (None, "OK"):
+                raise ConnectorError(f"{self.connector_id} 官方來源狀態: {payload.get('stat')}")
             records = payload.get("data") or payload.get("aaData") or payload.get("records")
+            fields = payload.get("fields")
+            if isinstance(records, list) and records and isinstance(records[0], list):
+                if not isinstance(fields, list) or not all(isinstance(field, str) for field in fields):
+                    raise ConnectorError(f"{self.connector_id} 表格式 JSON 缺少 fields")
+                report_date = payload.get("date")
+                records = [
+                    {**dict(zip(fields, row)), **({"Date": report_date} if report_date else {})}
+                    for row in records
+                    if isinstance(row, list)
+                ]
         else:
             records = payload
         if not isinstance(records, list):
@@ -163,7 +203,7 @@ class OfficialTabularConnector:
                 continue
             candidate_symbol = str(_first(candidate, self.symbol_aliases) or "").strip().upper()
             if candidate_symbol == normalized_symbol:
-                record = candidate
+                record = self.prepare_record(candidate)
                 break
 
         observations: list[NormalizedObservation] = []
@@ -172,7 +212,10 @@ class OfficialTabularConnector:
             raw_value = _first(record, mapping.aliases) if record else None
             value: int | float | str | None
             if mapping.numeric:
-                value = parse_number(raw_value)
+                if mapping.empty_is_zero and raw_value is not None and not str(raw_value).strip():
+                    value = 0
+                else:
+                    value = parse_number(raw_value)
             else:
                 value = str(raw_value).strip() if raw_value is not None and str(raw_value).strip() else None
             if value is None:
@@ -185,7 +228,7 @@ class OfficialTabularConnector:
                     symbol=normalized_symbol,
                     value=value,
                     unit=mapping.unit,
-                    valid_time=fetched_at,
+                    valid_time=_valid_time(record, fetched_at),
                     source_id=self.source_id,
                     source_record_key=normalized_symbol,
                 )
@@ -199,6 +242,9 @@ class OfficialTabularConnector:
             tuple(observations),
             tuple(coverage),
         )
+
+    def prepare_record(self, record: Mapping[str, Any]) -> Mapping[str, Any]:
+        return record
 
 
 MARKET_MAPPINGS = (
@@ -216,30 +262,42 @@ MARKET_MAPPINGS = (
 
 INSTITUTIONAL_MAPPINGS = (
     FieldMapping("institutional.foreign.buy", "shares", (
-        "外陸資買進股數(不含外資自營商)", "ForeignInvestorsBuy", "ForeignInvestorsBuyAmount", "外資及陸資買進股數")),
+        "外陸資買進股數(不含外資自營商)",
+        "Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Total Buy",
+        "ForeignInvestorsBuy", "ForeignInvestorsBuyAmount", "外資及陸資買進股數")),
     FieldMapping("institutional.foreign.sell", "shares", (
-        "外陸資賣出股數(不含外資自營商)", "ForeignInvestorsSell", "ForeignInvestorsSellAmount", "外資及陸資賣出股數")),
+        "外陸資賣出股數(不含外資自營商)",
+        " Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Total Sell",
+        "ForeignInvestorsSell", "ForeignInvestorsSellAmount", "外資及陸資賣出股數")),
     FieldMapping("institutional.foreign.net", "shares", (
-        "外陸資買賣超股數(不含外資自營商)", "ForeignInvestorsDifference", "ForeignInvestorsNet", "外資及陸資買賣超股數")),
-    FieldMapping("institutional.trust.buy", "shares", ("投信買進股數", "InvestmentTrustBuy", "InvestmentTrustBuyAmount")),
-    FieldMapping("institutional.trust.sell", "shares", ("投信賣出股數", "InvestmentTrustSell", "InvestmentTrustSellAmount")),
-    FieldMapping("institutional.trust.net", "shares", ("投信買賣超股數", "InvestmentTrustDifference", "InvestmentTrustNet")),
-    FieldMapping("institutional.dealer.buy", "shares", ("自營商買進股數", "DealerBuy", "DealerBuyAmount")),
-    FieldMapping("institutional.dealer.sell", "shares", ("自營商賣出股數", "DealerSell", "DealerSellAmount")),
-    FieldMapping("institutional.dealer.net", "shares", ("自營商買賣超股數", "DealerDifference", "DealerNet")),
+        "外陸資買賣超股數(不含外資自營商)",
+        "Foreign Investors include Mainland Area Investors (Foreign Dealers excluded)-Difference",
+        "ForeignInvestorsDifference", "ForeignInvestorsNet", "外資及陸資買賣超股數")),
+    FieldMapping("institutional.trust.buy", "shares", (
+        "投信買進股數", "SecuritiesInvestmentTrustCompanies-TotalBuy", "InvestmentTrustBuy", "InvestmentTrustBuyAmount")),
+    FieldMapping("institutional.trust.sell", "shares", (
+        "投信賣出股數", "SecuritiesInvestmentTrustCompanies-TotalSell", "InvestmentTrustSell", "InvestmentTrustSellAmount")),
+    FieldMapping("institutional.trust.net", "shares", (
+        "投信買賣超股數", "SecuritiesInvestmentTrustCompanies-Difference", "InvestmentTrustDifference", "InvestmentTrustNet")),
+    FieldMapping("institutional.dealer.buy", "shares", (
+        "自營商買進股數", "Dealers-TotalBuy", "DealerBuy", "DealerBuyAmount")),
+    FieldMapping("institutional.dealer.sell", "shares", (
+        "自營商賣出股數", "Dealers-TotalSell", "DealerSell", "DealerSellAmount")),
+    FieldMapping("institutional.dealer.net", "shares", (
+        "自營商買賣超股數", "Dealers-Difference", "DealerDifference", "DealerNet")),
 )
 
 MARGIN_MAPPINGS = (
-    FieldMapping("margin.financing.previous_balance", "shares", ("融資前日餘額", "MarginPurchasePreviousBalance")),
-    FieldMapping("margin.financing.buy", "shares", ("融資買進", "MarginPurchaseBuy")),
-    FieldMapping("margin.financing.sell", "shares", ("融資賣出", "MarginPurchaseSell")),
-    FieldMapping("margin.financing.cash_redemption", "shares", ("現金償還", "MarginPurchaseCashRedemption")),
-    FieldMapping("margin.financing.balance", "shares", ("融資今日餘額", "融資餘額", "MarginPurchaseCurrentBalance")),
-    FieldMapping("margin.short.previous_balance", "shares", ("融券前日餘額", "ShortSalePreviousBalance")),
-    FieldMapping("margin.short.sell", "shares", ("融券賣出", "ShortSaleSell")),
-    FieldMapping("margin.short.buy", "shares", ("融券買進", "ShortSaleBuy")),
-    FieldMapping("margin.short.stock_redemption", "shares", ("現券償還", "ShortSaleStockRedemption")),
-    FieldMapping("margin.short.balance", "shares", ("融券今日餘額", "融券餘額", "ShortSaleCurrentBalance")),
+    FieldMapping("margin.financing.previous_balance", "trading_units", ("融資前日餘額", "MarginPurchaseBalancePreviousDay"), empty_is_zero=True),
+    FieldMapping("margin.financing.buy", "trading_units", ("融資買進", "MarginPurchase"), empty_is_zero=True),
+    FieldMapping("margin.financing.sell", "trading_units", ("融資賣出", "MarginSales"), empty_is_zero=True),
+    FieldMapping("margin.financing.cash_redemption", "trading_units", ("融資現金償還", "現金償還", "CashRedemption"), empty_is_zero=True),
+    FieldMapping("margin.financing.balance", "trading_units", ("融資今日餘額", "融資餘額", "MarginPurchaseBalance"), empty_is_zero=True),
+    FieldMapping("margin.short.previous_balance", "trading_units", ("融券前日餘額", "ShortSaleBalancePreviousDay"), empty_is_zero=True),
+    FieldMapping("margin.short.sell", "trading_units", ("融券賣出", "ShortSale"), empty_is_zero=True),
+    FieldMapping("margin.short.buy", "trading_units", ("融券買進", "ShortConvering"), empty_is_zero=True),
+    FieldMapping("margin.short.stock_redemption", "trading_units", ("融券現券償還", "現券償還", "StockRedemption"), empty_is_zero=True),
+    FieldMapping("margin.short.balance", "trading_units", ("融券今日餘額", "融券餘額", "ShortSaleBalance"), empty_is_zero=True),
 )
 
 
@@ -262,9 +320,18 @@ class TpexMarketConnector(OfficialTabularConnector):
 class TwseInstitutionalConnector(OfficialTabularConnector):
     connector_id = "twse_institutional"
     source_id = "twse_openapi"
-    endpoint = "https://openapi.twse.com.tw/v1/fund/T86"
+    endpoint = "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999"
     symbol_aliases = ("證券代號", "股票代號", "Code")
     mappings = INSTITUTIONAL_MAPPINGS
+
+    def prepare_record(self, record: Mapping[str, Any]) -> Mapping[str, Any]:
+        prepared = dict(record)
+        for side in ("買進", "賣出"):
+            own = parse_number(record.get(f"自營商{side}股數(自行買賣)"))
+            hedge = parse_number(record.get(f"自營商{side}股數(避險)"))
+            if own is not None and hedge is not None:
+                prepared[f"自營商{side}股數"] = own + hedge
+        return prepared
 
 
 class TpexInstitutionalConnector(OfficialTabularConnector):
@@ -286,7 +353,7 @@ class TwseMarginConnector(OfficialTabularConnector):
 class TpexMarginConnector(OfficialTabularConnector):
     connector_id = "tpex_margin"
     source_id = "tpex_openapi"
-    endpoint = "https://www.tpex.org.tw/openapi/v1/tpex_margin_balancing"
+    endpoint = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_margin_balance"
     symbol_aliases = ("SecuritiesCompanyCode", "股票代號", "證券代號", "Code")
     mappings = MARGIN_MAPPINGS
 

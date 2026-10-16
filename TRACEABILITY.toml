@@ -23,7 +23,7 @@ statement = "證交所與櫃買中心官方端點、授權檢查狀態、更新�
 catalog_prefixes = ["category.market", "category.institutional", "category.margin"]
 implementation = ["SOURCE_CATALOG.toml", "src/tw_stock_swing/sources/official.py"]
 tests = ["test_source_catalog_has_official_endpoints", "test_fixture_payloads_match_connector_contracts"]
-status = "partial_network_blocked"
+status = "partial_5_of_6"
 
 [[requirements]]
 id = "REQ-TIME-001"

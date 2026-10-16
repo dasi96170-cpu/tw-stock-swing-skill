@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | REQ-DATA-001 | 23 大資料族群不可遺漏 | `DATA_CATALOG.toml`、`catalog.py`、`coverage.py` | 23 個 category gate 與完整 ID 集合測試 | 已完成第一版 |
 | REQ-DATA-002 | 行情、成交、法人、融資券欄位契約 | `DATA_CATALOG.toml`、`sources/official.py` | 六組 fixture contract 測試 | 已完成第一版 |
-| REQ-SOURCE-001 | 官方來源、端點與可用性可追蹤 | `SOURCE_CATALOG.toml`、`sources/official.py` | 離線 schema 測試；live smoke 待網路設定發布 | 部分完成 |
+| REQ-SOURCE-001 | 官方來源、端點與可用性可追蹤 | `SOURCE_CATALOG.toml`、`sources/official.py` | 5/6 live schema 通過；TWSE 法人待新增網域發布 | 部分完成 |
 | REQ-TIME-001 | Point-in-time 與修正版不可覆蓋 | `storage.py` | append-only 與 as-of 測試 | 已完成第一版 |
 | REQ-EVIDENCE-001 | 證據帳本及品質維度 | `storage.py` | 品質七維保存測試 | 已完成第一版 |
 | REQ-COVERAGE-001 | 每項恰有一個合法狀態 | `coverage.py`、`storage.py` | 漏項補狀態、未知/重複拒絕、P0 嚴格閘門 | 已完成第一版 |
