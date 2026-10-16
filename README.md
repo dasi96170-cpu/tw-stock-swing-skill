@@ -74,6 +74,7 @@ python3 -m compileall -q src tests
 
 ```text
 SKILL.md                       Codex Skill 操作與回答規範
+REQUIREMENTS.md                深度研究目標、資料範圍與驗收規格
 src/tw_stock_swing/            Python 分析引擎及 CLI
 src/tw_stock_swing/default_watchlist.txt  MVP 預設觀察清單
 tests/                         離線單元測試
