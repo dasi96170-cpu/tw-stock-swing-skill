@@ -40,6 +40,7 @@ class CatalogTests(unittest.TestCase):
         data = load_source_catalog()
         sources = {source["id"]: source for source in data["sources"]}
         self.assertLessEqual({"twse_openapi", "tpex_openapi"}, sources.keys())
+        self.assertIn("yahoo_finance", sources)
         endpoint_ids = {
             endpoint["id"]
             for source_id in ("twse_openapi", "tpex_openapi")
@@ -49,6 +50,12 @@ class CatalogTests(unittest.TestCase):
             "twse.market.daily_all", "twse.institutional.daily", "twse.margin.daily",
             "tpex.market.daily_close", "tpex.institutional.daily", "tpex.margin.daily",
         })
+
+    def test_implemented_catalog_sources_exist_in_source_catalog(self) -> None:
+        known_sources = {source["id"] for source in load_source_catalog()["sources"]}
+        for field in load_catalog().fields:
+            if field.implementation == "implemented":
+                self.assertLessEqual(set(field.sources), known_sources, field.id)
 
     def test_traceability_references_real_files_and_catalog_items(self) -> None:
         root = Path(__file__).resolve().parents[1]

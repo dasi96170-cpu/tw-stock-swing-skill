@@ -4,5 +4,8 @@ __pycache__/
 build/
 dist/
 .venv/
+.pytest_cache/
 .coverage
 htmlcov/
+.tw-stock-swing/
+*.sqlite3

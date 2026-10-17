@@ -13,6 +13,7 @@ class PriceBar:
     low: float
     close: float
     volume: int
+    adjusted_close: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +49,8 @@ class AnalysisResult:
     target_1: float
     target_2: float
     risk_reward_1: float
+    excluded_incomplete_bar: bool
+    freshness_status: str
     reasons: tuple[str, ...]
     risks: tuple[str, ...]
     freshness_warning: str | None

@@ -4,12 +4,14 @@ from pathlib import Path
 import tempfile
 import unittest
 from contextlib import redirect_stdout
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from tw_stock_swing.cli import main
+from tw_stock_swing.coverage import CoverageEntry
 from tw_stock_swing.models import MarketData, PriceBar
+from tw_stock_swing.sources import ConnectorResult
 
 
 def fixture_market_data() -> MarketData:
@@ -67,7 +69,7 @@ class CliTests(unittest.TestCase):
         with redirect_stdout(output):
             exit_code = main(["research", "2330", "--json"])
         payload = json.loads(output.getvalue())
-        self.assertEqual(exit_code, 0)
+        self.assertEqual(exit_code, 3)
         self.assertEqual(payload["status"], "partial")
         self.assertEqual(payload["research"]["symbol"], "2330.TW")
 
@@ -79,6 +81,38 @@ class CliTests(unittest.TestCase):
                 exit_code = main(["init-db", str(path)])
             self.assertEqual(exit_code, 0)
             self.assertTrue(path.exists())
+
+    def test_sources_failure_exit_code_takes_priority_over_partial(self) -> None:
+        when = datetime(2026, 10, 17, tzinfo=timezone.utc)
+
+        class Connector:
+            def __init__(self, result: ConnectorResult) -> None:
+                self.result = result
+                self.source_id = result.source_id
+
+            def fetch_safe(self, *_args: object, **_kwargs: object) -> ConnectorResult:
+                return self.result
+
+        partial = ConnectorResult(
+            "partial", "twse_openapi", "https://openapi.twse.com.tw/test", when,
+            (), (CoverageEntry("market.close", "available", "fixture", "twse_openapi", when),),
+            valid_time_verified=False,
+        )
+        failed = ConnectorResult(
+            "failed", "tpex_openapi", "https://www.tpex.org.tw/test", when,
+            (), (CoverageEntry("market.close", "failed", "blocked", "tpex_openapi", when),),
+            error="blocked",
+        )
+        output = io.StringIO()
+        with patch(
+            "tw_stock_swing.cli.OFFICIAL_CONNECTORS",
+            {"partial": Connector(partial), "failed": Connector(failed)},
+        ), redirect_stdout(output):
+            exit_code = main(["sources", "--live"])
+        payload = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(payload["live"]["partial"]["status"], "partial")
+        self.assertEqual(payload["live"]["failed"]["status"], "failed")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 [catalog]
-version = "0.2.0"
-checked_at = "2026-10-16T20:53:06+08:00"
-validation_note = "六個官方連接器均已取得真實資料並通過 live schema 驗證；本次補齊 TWSE 個股法人 T86 的 9/9 欄位。"
+version = "0.3.0"
+checked_at = "2026-10-17T10:38:00+08:00"
+validation_note = "六個官方連接器曾取得真實抽樣並通過欄位 schema；2026-10-17 重查 5/6 可連線，TWSE T86 被本雲端網路隧道拒絕。這不代表永久可用、授權完成或資料永遠新鮮。"
 
 [[sources]]
 id = "twse_openapi"
@@ -16,7 +16,8 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "validated_3_of_3"
+live_validation = "schema_validated_3_of_3_availability_variable"
+last_live_check = "2026-10-17: market_ok, margin_ok, institutional_environment_tunnel_403"
 
 [[sources.endpoints]]
 id = "twse.market.daily_all"
@@ -49,7 +50,8 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "validated_3_of_3"
+live_validation = "schema_validated_3_of_3_availability_variable"
+last_live_check = "2026-10-17: 3_of_3_reachable_and_schema_complete"
 
 [[sources.endpoints]]
 id = "tpex.market.daily_close"
@@ -68,6 +70,21 @@ id = "tpex.margin.daily"
 path = "/tpex_mainboard_margin_balance"
 categories = ["margin"]
 connector = "tpex_margin"
+
+[[sources]]
+id = "yahoo_finance"
+name = "Yahoo Finance Chart API"
+authority = "third_party"
+base_url = "https://query1.finance.yahoo.com/v8/finance/chart"
+terms_url = "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html"
+storage_policy = "保存研究所需的正規化數值與雜湊；正式大量使用前須再次確認授權、限流及再散布條款。"
+authentication = "none_observed"
+rate_limit = "未公開保證；低頻按需請求"
+history = "目前請求六個月日線；可用範圍與調整方式須持續驗證"
+update_schedule = "第三方未保證；研究執行時按需取得"
+priority = 2
+fallback_sources = ["twse_openapi", "tpex_openapi"]
+live_validation = "prototype_unofficial_not_authoritative"
 
 [[sources]]
 id = "mops"

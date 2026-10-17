@@ -1,14 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 import gzip
+import hashlib
 from http.client import IncompleteRead
+from io import BytesIO
 import json
 import math
 import re
+import time
 from typing import Any, Callable, Mapping, Sequence
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -39,6 +43,8 @@ class ConnectorResult:
     observations: tuple[NormalizedObservation, ...]
     coverage: tuple[CoverageEntry, ...]
     error: str | None = None
+    content_hash: str | None = None
+    valid_time_verified: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,11 +57,15 @@ class FieldMapping:
 
 
 Fetcher = Callable[[str, float], bytes]
+MAX_RESPONSE_BYTES = 25 * 1024 * 1024
+TRANSIENT_HTTP_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
 
 
 def _default_fetcher(url: str, timeout: float) -> bytes:
+    if timeout <= 0:
+        raise ConnectorError("timeout 必須大於 0")
     last_error: Exception | None = None
-    for _attempt in range(3):
+    for attempt in range(3):
         request = Request(
             url,
             headers={
@@ -66,12 +76,34 @@ def _default_fetcher(url: str, timeout: float) -> bytes:
         )
         try:
             with urlopen(request, timeout=timeout) as response:
-                payload = response.read()
+                final_url = response.geturl()
+                if urlparse(final_url).hostname != urlparse(url).hostname:
+                    raise ConnectorError("官方來源重新導向至未允許網域")
+                content_length = response.headers.get("Content-Length")
+                if content_length:
+                    try:
+                        declared_size = int(content_length)
+                    except ValueError as exc:
+                        raise ConnectorError("官方來源回應的 Content-Length 無效") from exc
+                    if declared_size > MAX_RESPONSE_BYTES:
+                        raise ConnectorError(f"官方來源回應超過 {MAX_RESPONSE_BYTES} bytes")
+                payload = response.read(MAX_RESPONSE_BYTES + 1)
+                if len(payload) > MAX_RESPONSE_BYTES:
+                    raise ConnectorError(f"官方來源回應超過 {MAX_RESPONSE_BYTES} bytes")
                 if response.headers.get("Content-Encoding", "").lower() == "gzip":
-                    payload = gzip.decompress(payload)
+                    with gzip.GzipFile(fileobj=BytesIO(payload)) as archive:
+                        payload = archive.read(MAX_RESPONSE_BYTES + 1)
+                    if len(payload) > MAX_RESPONSE_BYTES:
+                        raise ConnectorError(f"官方來源解壓後超過 {MAX_RESPONSE_BYTES} bytes")
                 return payload
-        except (HTTPError, URLError, TimeoutError, OSError, IncompleteRead) as exc:
+        except HTTPError as exc:
+            if exc.code not in TRANSIENT_HTTP_STATUSES:
+                raise ConnectorError(f"官方來源請求失敗 {url}: HTTP {exc.code}") from exc
             last_error = exc
+        except (URLError, TimeoutError, OSError, IncompleteRead) as exc:
+            last_error = exc
+        if attempt < 2:
+            time.sleep(0.25 * (2 ** attempt))
     raise ConnectorError(f"官方來源請求失敗 {url}: {last_error}") from last_error
 
 
@@ -120,6 +152,23 @@ def _valid_time(record: Mapping[str, Any], fallback: datetime) -> datetime:
         return fallback
 
 
+def _has_valid_source_date(record: Mapping[str, Any]) -> bool:
+    raw = _first(record, ("Date", "日期", "資料日期"))
+    if raw is None:
+        return False
+    digits = re.sub(r"\D", "", str(raw))
+    try:
+        if len(digits) == 7:
+            datetime(int(digits[:3]) + 1911, int(digits[3:5]), int(digits[5:]))
+        elif len(digits) == 8:
+            datetime(int(digits[:4]), int(digits[4:6]), int(digits[6:]))
+        else:
+            return False
+    except ValueError:
+        return False
+    return True
+
+
 class OfficialTabularConnector:
     connector_id = ""
     source_id = ""
@@ -145,7 +194,8 @@ class OfficialTabularConnector:
             payload = json.loads(raw.decode("utf-8-sig"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ConnectorError(f"{self.connector_id} 回傳非合法 JSON") from exc
-        return self.parse(payload, symbol=symbol, fetched_at=when)
+        result = self.parse(payload, symbol=symbol, fetched_at=when)
+        return replace(result, content_hash=hashlib.sha256(raw).hexdigest())
 
     def fetch_safe(
         self,
@@ -241,6 +291,7 @@ class OfficialTabularConnector:
             fetched_at,
             tuple(observations),
             tuple(coverage),
+            valid_time_verified=_has_valid_source_date(record) if record else False,
         )
 
     def prepare_record(self, record: Mapping[str, Any]) -> Mapping[str, Any]:

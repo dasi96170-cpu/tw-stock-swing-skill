@@ -31,10 +31,16 @@ class StorageTests(unittest.TestCase):
             valid_time=datetime(2026, 10, 15, tzinfo=UTC), known_at=datetime(2026, 10, 15, 7, tzinfo=UTC),
             system_recorded_at=datetime(2026, 10, 15, 7, 1, tzinfo=UTC), source_id="twse_openapi", supersedes=first,
         )
+        third = database.add_observation(
+            instrument_id=instrument, field_id="market.close", value=1007, unit="TWD/share",
+            valid_time=datetime(2026, 10, 15, tzinfo=UTC), known_at=datetime(2026, 10, 15, 8, tzinfo=UTC),
+            system_recorded_at=datetime(2026, 10, 15, 8, 1, tzinfo=UTC), source_id="twse_openapi",
+        )
         rows = database.connection.execute(
-            "SELECT observation_id, revision FROM observations ORDER BY revision"
+            "SELECT observation_id, revision, supersedes_observation_id FROM observations ORDER BY revision"
         ).fetchall()
-        self.assertEqual([(row["observation_id"], row["revision"]) for row in rows], [(first, 1), (second, 2)])
+        self.assertEqual([(row["observation_id"], row["revision"]) for row in rows], [(first, 1), (second, 2), (third, 3)])
+        self.assertEqual(rows[-1]["supersedes_observation_id"], second)
 
 
     def test_as_of_query_excludes_later_known_data(self) -> None:

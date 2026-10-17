@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from .indicators import atr, macd, rsi, sma
@@ -9,6 +9,7 @@ from .models import AnalysisResult, MarketData, PriceBar
 
 
 MINIMUM_BARS = 60
+MARKET_CLOSE = time(13, 35)
 
 
 def _tick_size(price: float) -> float:
@@ -53,14 +54,68 @@ def _validate_bars(bars: tuple[PriceBar, ...]) -> None:
             raise ValueError(f"{bar.date.isoformat()} 的 OHLC 資料不合理")
         if bar.volume < 0:
             raise ValueError(f"{bar.date.isoformat()} 的成交量不可為負數")
+        if bar.adjusted_close is not None and (
+            not math.isfinite(bar.adjusted_close) or bar.adjusted_close <= 0
+        ):
+            raise ValueError(f"{bar.date.isoformat()} 的還原收盤價無效")
 
 
-def analyze_bars(data: MarketData) -> AnalysisResult:
+def _previous_weekday(value: date) -> date:
+    candidate = value - timedelta(days=1)
+    while candidate.weekday() >= 5:
+        candidate -= timedelta(days=1)
+    return candidate
+
+
+def expected_completed_session(as_of: datetime) -> date:
+    """Return the latest session that should be complete.
+
+    This is deliberately a weekday approximation until an exchange calendar is
+    added.  It never treats the current trading day's partial daily candle as a
+    completed observation.
+    """
+    local = as_of.astimezone(ZoneInfo("Asia/Taipei"))
+    if local.date().weekday() >= 5:
+        candidate = local.date()
+        while candidate.weekday() >= 5:
+            candidate -= timedelta(days=1)
+        return candidate
+    if local.time() < MARKET_CLOSE:
+        return _previous_weekday(local.date())
+    return local.date()
+
+
+def analyze_bars(
+    data: MarketData,
+    *,
+    as_of: datetime | None = None,
+    exclude_incomplete_bar: bool = True,
+) -> AnalysisResult:
+    when = as_of or datetime.now(ZoneInfo("Asia/Taipei"))
+    if when.tzinfo is None:
+        raise ValueError("as_of 必須包含時區")
+    local_when = when.astimezone(ZoneInfo("Asia/Taipei"))
     bars = data.bars
+    excluded_latest = False
+    if (
+        exclude_incomplete_bar
+        and bars
+        and bars[-1].date == local_when.date()
+        and local_when.date().weekday() < 5
+        and local_when.time() < MARKET_CLOSE
+    ):
+        bars = bars[:-1]
+        excluded_latest = True
     _validate_bars(bars)
-    closes = [bar.close for bar in bars]
-    highs = [bar.high for bar in bars]
-    lows = [bar.low for bar in bars]
+    adjustment_factors = [
+        (bar.adjusted_close / bar.close)
+        if bar.adjusted_close is not None and bar.adjusted_close > 0
+        else 1.0
+        for bar in bars
+    ]
+    closes = [bar.close * factor for bar, factor in zip(bars, adjustment_factors)]
+    highs = [bar.high * factor for bar, factor in zip(bars, adjustment_factors)]
+    lows = [bar.low * factor for bar, factor in zip(bars, adjustment_factors)]
     volumes = [bar.volume for bar in bars]
 
     latest = bars[-1]
@@ -69,8 +124,11 @@ def analyze_bars(data: MarketData) -> AnalysisResult:
     sma20 = sma(closes, 20)
     sma60 = sma(closes, 60)
     rsi14 = rsi(closes, 14)
-    atr14 = atr(highs, lows, closes, 14)
+    adjusted_atr14 = atr(highs, lows, closes, 14)
+    latest_factor = adjustment_factors[-1]
+    atr14 = adjusted_atr14 / latest_factor
     macd_line, macd_signal, macd_histogram = macd(closes)
+    latest_adjusted_close = closes[-1]
     previous_20_high = max(highs[-21:-1]) if len(highs) >= 21 else max(highs[:-1])
     average_volume_20 = sum(volumes[-21:-1]) / min(20, len(volumes) - 1)
     volume_ratio = latest.volume / average_volume_20 if average_volume_20 > 0 else 0.0
@@ -80,7 +138,7 @@ def analyze_bars(data: MarketData) -> AnalysisResult:
     reasons: list[str] = []
     risks: list[str] = []
 
-    if latest.close > sma20:
+    if latest_adjusted_close > sma20:
         score += 15
         reasons.append("收盤價站上 20 日均線")
     else:
@@ -100,7 +158,7 @@ def analyze_bars(data: MarketData) -> AnalysisResult:
     else:
         risks.append("20 日均線尚未站上 60 日均線")
 
-    breakout_ratio = latest.close / previous_20_high
+    breakout_ratio = latest_adjusted_close / previous_20_high
     if breakout_ratio >= 1.0:
         score += 15
         reasons.append("收盤價突破前 20 日高點")
@@ -150,7 +208,7 @@ def analyze_bars(data: MarketData) -> AnalysisResult:
     score = max(0, min(100, score))
     verdict = "候選" if score >= 70 else "觀察" if score >= 55 else "避開"
 
-    recent_support = min(lows[-10:])
+    recent_support = min(lows[-10:]) / latest_factor
     volatility_stop = latest.close - (2.0 * atr14)
     stop = max(recent_support, volatility_stop)
     if stop >= latest.close - (0.5 * atr14):
@@ -158,20 +216,26 @@ def analyze_bars(data: MarketData) -> AnalysisResult:
     stop_loss = round_to_tick(stop, "down")
     entry_low = round_to_tick(latest.close - (0.25 * atr14), "down")
     entry_high = round_to_tick(latest.close + (0.10 * atr14), "up")
-    risk_per_share = max(latest.close - stop_loss, _tick_size(latest.close))
-    target_1 = round_to_tick(latest.close + (2.0 * risk_per_share), "up")
-    target_2 = round_to_tick(latest.close + (3.0 * risk_per_share), "up")
+    risk_per_share = max(entry_high - stop_loss, _tick_size(entry_high))
+    target_1 = round_to_tick(entry_high + (2.0 * risk_per_share), "up")
+    target_2 = round_to_tick(entry_high + (3.0 * risk_per_share), "up")
     rounded_close = round_to_tick(latest.close)
-    actual_risk = max(rounded_close - stop_loss, _tick_size(latest.close))
-    risk_reward_1 = (target_1 - rounded_close) / actual_risk
+    risk_reward_1 = (target_1 - entry_high) / risk_per_share
 
-    today = datetime.now(ZoneInfo("Asia/Taipei")).date()
-    age_days = (today - latest.date).days
+    expected_session = expected_completed_session(local_when)
     freshness_warning: str | None = None
-    if age_days < 0:
+    freshness_status = "current"
+    if latest.date > expected_session:
+        freshness_status = "future"
         freshness_warning = "資料日期晚於目前日期，請檢查資料源時鐘"
-    elif age_days > 5:
-        freshness_warning = f"最新資料距今 {age_days} 天，可能已過期"
+    elif latest.date < expected_session:
+        freshness_status = "stale"
+        freshness_warning = (
+            f"最新完整日線為 {latest.date.isoformat()}，"
+            f"落後預期交易日 {expected_session.isoformat()}"
+        )
+    elif excluded_latest:
+        freshness_warning = "已排除盤中尚未完成的當日日 K，技術分析使用上一個完整交易日"
 
     if not risks:
         risks.append("技術面分數不涵蓋重大消息、財報、處置股票及大盤突發風險")
@@ -202,6 +266,8 @@ def analyze_bars(data: MarketData) -> AnalysisResult:
         target_1=target_1,
         target_2=target_2,
         risk_reward_1=round(risk_reward_1, 2),
+        excluded_incomplete_bar=excluded_latest,
+        freshness_status=freshness_status,
         reasons=tuple(reasons),
         risks=tuple(risks),
         freshness_warning=freshness_warning,

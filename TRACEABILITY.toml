@@ -1,5 +1,5 @@
 [matrix]
-version = "0.2.0"
+version = "0.3.0"
 
 [[requirements]]
 id = "REQ-DATA-001"
@@ -23,7 +23,7 @@ statement = "證交所與櫃買中心官方端點、授權檢查狀態、更新�
 catalog_prefixes = ["category.market", "category.institutional", "category.margin"]
 implementation = ["SOURCE_CATALOG.toml", "src/tw_stock_swing/sources/official.py"]
 tests = ["test_source_catalog_has_official_endpoints", "test_fixture_payloads_match_connector_contracts"]
-status = "implemented"
+status = "partial"
 
 [[requirements]]
 id = "REQ-TIME-001"
@@ -63,6 +63,22 @@ statement = "現有 analyze 與 scan CLI 不被破壞"
 catalog_prefixes = []
 implementation = ["src/tw_stock_swing/cli.py"]
 tests = ["tests/test_cli.py", "tests/test_analysis.py"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-SAFETY-001"
+statement = "盤中未完成日 K、P0 缺口、過期、來源失敗與同日價格衝突必須阻擋正式交易計畫"
+catalog_prefixes = ["category.", "market."]
+implementation = ["src/tw_stock_swing/analysis.py", "src/tw_stock_swing/research.py", "src/tw_stock_swing/formatting.py"]
+tests = ["test_intraday_daily_bar_is_excluded_until_market_close", "tests/test_research.py"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-PERSIST-001"
+statement = "research 預設保存 run、三時間觀察值、coverage、證據與結論外鍵關聯"
+catalog_prefixes = ["category."]
+implementation = ["src/tw_stock_swing/research.py", "src/tw_stock_swing/storage.py", "src/tw_stock_swing/cli.py"]
+tests = ["test_research_is_persisted_with_evidence_links", "tests/test_storage.py"]
 status = "implemented"
 
 [[requirements]]

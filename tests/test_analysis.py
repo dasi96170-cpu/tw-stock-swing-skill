@@ -1,5 +1,6 @@
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from tw_stock_swing.analysis import analyze_bars, round_to_tick
 from tw_stock_swing.models import MarketData, PriceBar
@@ -54,6 +55,31 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(round_to_tick(48.03), 48.05)
         self.assertEqual(round_to_tick(105.2, "down"), 105.0)
         self.assertEqual(round_to_tick(1002.0, "up"), 1005.0)
+
+    def test_intraday_daily_bar_is_excluded_until_market_close(self) -> None:
+        as_of = datetime(2026, 10, 16, 10, 0, tzinfo=ZoneInfo("Asia/Taipei"))
+        data = make_market_data(True)
+        shift = as_of.date() - data.bars[-1].date
+        shifted = MarketData(
+            data.symbol,
+            data.name,
+            tuple(
+                PriceBar(
+                    date=bar.date + shift,
+                    open=bar.open,
+                    high=bar.high,
+                    low=bar.low,
+                    close=bar.close,
+                    volume=bar.volume,
+                )
+                for bar in data.bars
+            ),
+            data.source,
+        )
+        result = analyze_bars(shifted, as_of=as_of)
+        self.assertTrue(result.excluded_incomplete_bar)
+        self.assertEqual(result.data_date, as_of.date() - timedelta(days=1))
+        self.assertEqual(result.freshness_status, "current")
 
 
 if __name__ == "__main__":

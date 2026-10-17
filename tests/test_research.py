@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from zoneinfo import ZoneInfo
 
 from tw_stock_swing.coverage import CoverageEntry
 from tw_stock_swing.formatting import format_research
@@ -29,7 +31,8 @@ class FixedProvider:
         self.symbol = symbol
 
     def fetch(self, _symbol: str) -> MarketData:
-        start = date.today() - timedelta(days=89)
+        latest = WHEN.astimezone(ZoneInfo("Asia/Taipei")).date()
+        start = latest - timedelta(days=89)
         bars = tuple(
             PriceBar(
                 date=start + timedelta(days=index),
@@ -96,7 +99,8 @@ class ResearchTests(unittest.TestCase):
             generated_at=WHEN,
         )
 
-        self.assertEqual(report.status, "ok")
+        self.assertEqual(report.status, "insufficient")
+        self.assertFalse(report.decision_eligible)
         self.assertEqual(report.market, "TWSE")
         self.assertEqual(report.name, "台積電")
         self.assertEqual(report.observations_by_id["identity.symbol"].value, "2330")
@@ -112,6 +116,7 @@ class ResearchTests(unittest.TestCase):
         payload = report.to_dict()
         self.assertEqual(payload["scope"], "market_technical_institutional_margin")
         self.assertEqual(payload["official"]["market"]["market.close"]["source_id"], "twse_openapi")
+        self.assertIsNone(payload["analysis"]["entry_low"])
 
     def test_market_suffix_routes_to_tpex_connectors(self) -> None:
         connectors = _tpex_connectors()
@@ -124,6 +129,9 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(report.market, "TPEx")
         self.assertEqual(report.name, "環球晶")
         self.assertTrue(all(connector.calls == [("6488", 20.0)] for connector in connectors.values()))
+        self.assertTrue(any("收盤價衝突" in item for item in report.market_conflicts))
+        close_coverage = next(item for item in report.coverage if item.field_id == "market.close")
+        self.assertEqual(close_coverage.status, "conflicting")
 
     def test_official_failure_returns_partial_report_instead_of_losing_analysis(self) -> None:
         connectors = _twse_connectors()
@@ -150,7 +158,7 @@ class ResearchTests(unittest.TestCase):
             connectors=connectors,
             generated_at=WHEN,
         )
-        self.assertEqual(report.status, "partial")
+        self.assertEqual(report.status, "insufficient")
         self.assertGreater(report.analysis.score, 0)
         self.assertNotIn("institutional.foreign.net", report.observations_by_id)
         self.assertTrue(any("network blocked" in warning for warning in report.warnings))
@@ -166,7 +174,7 @@ class ResearchTests(unittest.TestCase):
             connectors=_twse_connectors(),
             generated_at=WHEN + timedelta(days=10),
         )
-        self.assertEqual(report.status, "partial")
+        self.assertEqual(report.status, "insufficient")
         self.assertTrue(any(source.status == "stale" for source in report.source_health))
         self.assertTrue(any("可能已過期" in warning for warning in report.warnings))
 
@@ -182,6 +190,31 @@ class ResearchTests(unittest.TestCase):
         self.assertIn("融資融券", text)
         self.assertIn("來源健康", text)
         self.assertIn("財報、營收、估值、新聞及重大事件缺口已列出", text)
+        self.assertIn("正式交易計畫：未產生", text)
+
+    def test_research_is_persisted_with_evidence_links(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "research.sqlite3"
+            report = research_stock(
+                "2330",
+                provider=FixedProvider("2330.TW"),  # type: ignore[arg-type]
+                connectors=_twse_connectors(),
+                generated_at=WHEN,
+                database_path=database_path,
+            )
+            self.assertIsNotNone(report.run_id)
+            import sqlite3
+            with sqlite3.connect(database_path) as connection:
+                run = connection.execute(
+                    "SELECT status, completed_at FROM research_runs WHERE run_id=?",
+                    (report.run_id,),
+                ).fetchone()
+                self.assertEqual(run[0], "insufficient")
+                self.assertIsNotNone(run[1])
+                self.assertGreater(connection.execute("SELECT COUNT(*) FROM observations").fetchone()[0], 0)
+                self.assertGreater(connection.execute("SELECT COUNT(*) FROM evidence").fetchone()[0], 0)
+                self.assertGreater(connection.execute("SELECT COUNT(*) FROM evidence_observations").fetchone()[0], 0)
+                self.assertGreater(connection.execute("SELECT COUNT(*) FROM conclusion_evidence").fetchone()[0], 0)
 
 
 if __name__ == "__main__":

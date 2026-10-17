@@ -14,12 +14,15 @@ def format_analysis(result: AnalysisResult) -> str:
             f"{result.sma20:.2f} / {result.sma60:.2f}"
         ),
         f"RSI14 {result.rsi14:.2f}｜MACD {result.macd:.3f}｜ATR14 {result.atr14:.2f}",
-        (
-            f"參考計畫：入場 {result.entry_low:g}–{result.entry_high:g}｜"
+    ]
+    if result.freshness_status == "current":
+        lines.append(
+            f"技術面參考價位：入場 {result.entry_low:g}–{result.entry_high:g}｜"
             f"停損 {result.stop_loss:g}｜目標 {result.target_1:g} / {result.target_2:g}｜"
             f"第一目標風報比 {result.risk_reward_1:.2f}"
-        ),
-    ]
+        )
+    else:
+        lines.append("技術面參考價位：未顯示（完整日線資料時間未通過）")
     if result.freshness_warning:
         lines.append(f"資料警告：{result.freshness_warning}")
     lines.append("理由：")
@@ -46,8 +49,10 @@ def format_research(report: ResearchReport) -> str:
         observation = values.get(field_id)
         return _number(observation.value, suffix, signed=signed) if observation else "缺少"
 
+    decision_label = "可形成決策" if report.decision_eligible else "禁止形成正式交易決策"
     lines = [
-        f"{report.symbol} {report.name}｜{report.market}｜{analysis.verdict} {analysis.score}/100",
+        f"{report.symbol} {report.name}｜{report.market}｜研究狀態 {report.status}｜{decision_label}",
+        f"技術篩選：{analysis.verdict} {analysis.score}/100（尚未校準為勝率）",
         f"研究時間：{report.generated_at.isoformat()}｜日線資料：{analysis.data_date.isoformat()}",
         "",
         "技術與交易計畫",
@@ -55,9 +60,13 @@ def format_research(report: ResearchReport) -> str:
             f"收盤 {analysis.close:g}｜20 日報酬 {analysis.change_20d_pct:.2f}%｜"
             f"量比 {analysis.volume_ratio:.2f}｜RSI14 {analysis.rsi14:.2f}"
         ),
-        (
-            f"參考入場 {analysis.entry_low:g}–{analysis.entry_high:g}｜停損 {analysis.stop_loss:g}｜"
-            f"目標 {analysis.target_1:g} / {analysis.target_2:g}｜風報比 {analysis.risk_reward_1:.2f}"
+        *(
+            [
+                f"參考入場 {analysis.entry_low:g}–{analysis.entry_high:g}｜停損 {analysis.stop_loss:g}｜"
+                f"目標 {analysis.target_1:g} / {analysis.target_2:g}｜風報比 {analysis.risk_reward_1:.2f}"
+            ]
+            if report.decision_eligible
+            else ["正式交易計畫：未產生（關鍵 P0 資料、時效或一致性檢查未通過）"]
         ),
         "",
         "官方行情",
@@ -92,6 +101,7 @@ def format_research(report: ResearchReport) -> str:
         "風險與限制",
         *(f"- {risk}" for risk in analysis.risks),
         *(f"- {warning}" for warning in report.warnings),
+        *(f"- 決策阻擋：{blocker}" for blocker in report.decision_blockers),
         "",
         "來源健康",
         *(

@@ -15,7 +15,7 @@ from .models import AnalysisResult
 from .providers import DataProviderError, YahooFinanceProvider
 from .research import research_stock
 from .sources import ConnectorError, OFFICIAL_CONNECTORS
-from .storage import ResearchDatabase
+from .storage import ResearchDatabase, SCHEMA_VERSION
 
 
 DEFAULT_WATCHLIST = Path(__file__).with_name("default_watchlist.txt")
@@ -57,22 +57,41 @@ def _run_analyze(args: argparse.Namespace) -> int:
     provider = YahooFinanceProvider(timeout=args.timeout)
     try:
         result = _analyze_one(provider, args.symbol)
-    except (ValueError, DataProviderError) as exc:
+    except (ValueError, DataProviderError, OSError, sqlite3.Error) as exc:
         payload = _error_payload(str(exc))
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else f"錯誤：{exc}")
         return 2
     if args.json:
-        print(json.dumps({"status": "ok", "analysis": result.to_dict()}, ensure_ascii=False, indent=2))
+        analysis_payload = result.to_dict()
+        if result.freshness_status != "current":
+            for field in ("entry_low", "entry_high", "stop_loss", "target_1", "target_2", "risk_reward_1"):
+                analysis_payload[field] = None
+        print(
+            json.dumps(
+                {
+                    "status": "ok" if result.freshness_status == "current" else "stale",
+                    "scope": "technical_screen_only",
+                    "analysis": analysis_payload,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     else:
         print(format_analysis(result))
-    return 0
+    return 0 if result.freshness_status == "current" else 3
 
 
 def _run_research(args: argparse.Namespace) -> int:
     provider = YahooFinanceProvider(timeout=args.timeout)
     try:
-        report = research_stock(args.symbol, timeout=args.timeout, provider=provider)
-    except (ValueError, DataProviderError) as exc:
+        report = research_stock(
+            args.symbol,
+            timeout=args.timeout,
+            provider=provider,
+            database_path=None if args.no_persist else args.database,
+        )
+    except (ValueError, DataProviderError, OSError, sqlite3.Error) as exc:
         payload = _error_payload(str(exc))
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else f"錯誤：{exc}")
         return 2
@@ -86,7 +105,7 @@ def _run_research(args: argparse.Namespace) -> int:
         )
     else:
         print(format_research(report))
-    return 0
+    return {"complete": 0, "partial": 3, "insufficient": 4}.get(report.status, 2)
 
 
 def _run_scan(args: argparse.Namespace) -> int:
@@ -111,15 +130,26 @@ def _run_scan(args: argparse.Namespace) -> int:
                 results.append(future.result())
             except (ValueError, DataProviderError) as exc:
                 errors[symbol] = str(exc)
-    results.sort(key=lambda result: (result.score, result.volume_ratio), reverse=True)
-    selected = results[: args.limit]
+    stale_results = [result for result in results if result.freshness_status != "current"]
+    eligible_results = [result for result in results if result.freshness_status == "current"]
+    eligible_results.sort(key=lambda result: (result.score, result.volume_ratio), reverse=True)
+    selected = eligible_results[: args.limit]
 
     if args.json:
         payload = {
-            "status": "ok" if results else "error",
+            "status": "ok" if eligible_results and not stale_results else "partial" if results else "error",
             "requested": len(symbols),
             "succeeded": len(results),
+            "eligible": len(eligible_results),
             "results": [result.to_dict() for result in selected],
+            "excluded_stale": [
+                {
+                    "symbol": result.symbol,
+                    "data_date": result.data_date.isoformat(),
+                    "freshness_status": result.freshness_status,
+                }
+                for result in stale_results
+            ],
             "errors": errors,
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -136,7 +166,9 @@ def _run_scan(args: argparse.Namespace) -> int:
             print(f"另有 {len(errors)} 檔無法分析：", file=sys.stderr)
             for symbol, message in sorted(errors.items()):
                 print(f"- {symbol}: {message}", file=sys.stderr)
-    return 0 if results else 2
+        if stale_results:
+            print(f"另有 {len(stale_results)} 檔因日線過期或時間異常未納入排序。", file=sys.stderr)
+    return 0 if eligible_results and not stale_results else 3 if results else 2
 
 
 def _run_catalog(args: argparse.Namespace) -> int:
@@ -187,11 +219,23 @@ def _run_sources(args: argparse.Namespace) -> int:
                     exit_code = 2
                     continue
                 results[connector_id] = {
-                    "status": "ok",
+                    "status": (
+                        "ok"
+                        if all(item.status == "available" for item in result.coverage)
+                        and result.valid_time_verified
+                        else "partial"
+                    ),
                     "observations": len(result.observations),
                     "missing": [item.field_id for item in result.coverage if item.status != "available"],
                     "fetched_at": result.fetched_at.isoformat(),
+                    "content_hash": result.content_hash,
+                    "valid_time_verified": result.valid_time_verified,
                 }
+                if (
+                    any(item.status != "available" for item in result.coverage)
+                    or not result.valid_time_verified
+                ) and exit_code == 0:
+                    exit_code = 3
             except ConnectorError as exc:
                 results[connector_id] = {"status": "failed", "error": str(exc)}
                 exit_code = 2
@@ -208,7 +252,7 @@ def _run_init_db(args: argparse.Namespace) -> int:
     except (OSError, ValueError, sqlite3.Error) as exc:
         print(json.dumps(_error_payload(str(exc)), ensure_ascii=False, indent=2))
         return 2
-    print(json.dumps({"status": "ok", "database": str(path), "schema_version": 1}, ensure_ascii=False, indent=2))
+    print(json.dumps({"status": "ok", "database": str(path), "schema_version": SCHEMA_VERSION}, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -225,6 +269,12 @@ def build_parser() -> argparse.ArgumentParser:
     research_parser = subparsers.add_parser("research", help="整合官方資料研究單一股票")
     research_parser.add_argument("symbol", help="例如 2330、2330.TW 或 6488.TWO")
     research_parser.add_argument("--timeout", type=float, default=20.0, help="每個資料請求逾時秒數")
+    research_parser.add_argument(
+        "--database",
+        default=".tw-stock-swing/research.sqlite3",
+        help="保存研究紀錄的 SQLite 路徑",
+    )
+    research_parser.add_argument("--no-persist", action="store_true", help="不保存本次研究（僅供測試）")
     research_parser.add_argument("--json", action="store_true", help="輸出完整 JSON 與 coverage")
     research_parser.set_defaults(handler=_run_research)
 

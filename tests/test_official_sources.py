@@ -6,6 +6,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import unittest
+from unittest.mock import patch
 
 from tw_stock_swing.sources import (
     ConnectorError,
@@ -16,6 +17,7 @@ from tw_stock_swing.sources import (
     TwseMarginConnector,
     TwseMarketConnector,
 )
+from tw_stock_swing.sources.official import MAX_RESPONSE_BYTES, _default_fetcher
 
 
 FIXTURES = Path(__file__).with_name("fixtures")
@@ -33,6 +35,23 @@ CASES = [
 
 
 class OfficialSourceTests(unittest.TestCase):
+    def test_http_layer_rejects_declared_oversized_response(self) -> None:
+        class Response:
+            headers = {"Content-Length": str(MAX_RESPONSE_BYTES + 1)}
+
+            def __enter__(self) -> "Response":
+                return self
+
+            def __exit__(self, *_args: object) -> None:
+                return None
+
+            def geturl(self) -> str:
+                return "https://openapi.twse.com.tw/test"
+
+        with patch("tw_stock_swing.sources.official.urlopen", return_value=Response()):
+            with self.assertRaisesRegex(ConnectorError, "超過"):
+                _default_fetcher("https://openapi.twse.com.tw/test", 1.0)
+
     def test_fixture_payloads_match_connector_contracts(self) -> None:
         for connector, fixture, symbol in CASES:
             with self.subTest(connector=connector.connector_id):
@@ -71,6 +90,7 @@ class OfficialSourceTests(unittest.TestCase):
         values = {item.field_id: item.value for item in result.observations}
         self.assertEqual(values["margin.short.stock_redemption"], 0)
         self.assertTrue(all(entry.status == "available" for entry in result.coverage))
+        self.assertFalse(result.valid_time_verified)
 
     def test_source_missing_field_is_explicit_not_silent(self) -> None:
         payload = json.loads((FIXTURES / "twse_market.json").read_text(encoding="utf-8"))
@@ -95,3 +115,12 @@ class OfficialSourceTests(unittest.TestCase):
         self.assertEqual({item.field_id for item in result.coverage}, connector.contract_fields)
         self.assertTrue(all(item.status == "failed" for item in result.coverage))
         self.assertEqual(result.error, "network blocked")
+
+    def test_successful_fetch_records_payload_hash(self) -> None:
+        raw = (FIXTURES / "twse_market.json").read_bytes()
+        result = TwseMarketConnector().fetch(
+            "2330",
+            fetched_at=WHEN,
+            fetcher=lambda _url, _timeout: raw,
+        )
+        self.assertEqual(len(result.content_hash or ""), 64)

@@ -56,10 +56,14 @@ def assert_strict_p0_coverage(catalog: ResearchCatalog, entries: Iterable[Covera
     by_id = {entry.field_id: entry for entry in entries}
     blocking = []
     for field in catalog.fields:
-        if field.priority != "P0" or field.implementation != "implemented":
+        if field.priority != "P0":
             continue
         entry = by_id.get(field.id)
-        if entry is None or entry.status in {"missing", "stale", "failed", "conflicting", "unverified"}:
+        if (
+            field.implementation != "implemented"
+            or entry is None
+            or entry.status not in {"available", "computed", "not_applicable"}
+        ):
             blocking.append(field.id)
     if blocking:
         raise CoverageError("P0 資料不完整: " + ", ".join(blocking))

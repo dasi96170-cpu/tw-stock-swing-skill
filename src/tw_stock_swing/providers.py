@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from datetime import datetime
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -14,6 +15,9 @@ from .models import MarketData, PriceBar
 
 class DataProviderError(RuntimeError):
     """Raised when market data cannot be retrieved or parsed."""
+
+
+MAX_YAHOO_RESPONSE_BYTES = 10 * 1024 * 1024
 
 
 def symbol_candidates(symbol: str) -> tuple[str, ...]:
@@ -35,6 +39,8 @@ class YahooFinanceProvider:
         timeout: float = 15.0,
         opener: Callable[..., Any] = urlopen,
     ) -> None:
+        if timeout <= 0:
+            raise ValueError("timeout 必須大於 0")
         self.timeout = timeout
         self._opener = opener
 
@@ -61,13 +67,29 @@ class YahooFinanceProvider:
         )
         try:
             with self._opener(request, timeout=self.timeout) as response:
-                payload = json.load(response)
+                final_url = response.geturl() if hasattr(response, "geturl") else url
+                if urlparse(final_url).hostname != urlparse(url).hostname:
+                    raise DataProviderError("Yahoo 回應重新導向至未允許網域")
+                content_length = response.headers.get("Content-Length")
+                if content_length:
+                    try:
+                        declared_size = int(content_length)
+                    except ValueError as exc:
+                        raise DataProviderError("Yahoo 回應的 Content-Length 無效") from exc
+                    if declared_size > MAX_YAHOO_RESPONSE_BYTES:
+                        raise DataProviderError("Yahoo 回應大小超過限制")
+                raw = response.read(MAX_YAHOO_RESPONSE_BYTES + 1)
+                if len(raw) > MAX_YAHOO_RESPONSE_BYTES:
+                    raise DataProviderError("Yahoo 回應大小超過限制")
+                payload = json.loads(raw.decode("utf-8"))
         except HTTPError as exc:
             raise DataProviderError(f"HTTP {exc.code}") from exc
         except URLError as exc:
             raise DataProviderError(f"網路錯誤：{exc.reason}") from exc
-        except (TimeoutError, json.JSONDecodeError) as exc:
+        except (TimeoutError, OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise DataProviderError(f"回應無法讀取：{exc}") from exc
+        if not isinstance(payload, dict):
+            raise DataProviderError("Yahoo 回應不是 JSON 物件")
         return self._parse(payload, symbol)
 
     def _parse(self, payload: dict[str, Any], requested_symbol: str) -> MarketData:
@@ -80,7 +102,9 @@ class YahooFinanceProvider:
             raise DataProviderError("查無資料")
         result = results[0]
         timestamps = result.get("timestamp") or []
-        quotes = ((result.get("indicators") or {}).get("quote") or [{}])[0]
+        indicators = result.get("indicators") or {}
+        quotes = (indicators.get("quote") or [{}])[0]
+        adjusted = (indicators.get("adjclose") or [{}])[0].get("adjclose") or []
         fields = {key: quotes.get(key) or [] for key in ("open", "high", "low", "close", "volume")}
         timezone = ZoneInfo("Asia/Taipei")
         bars: list[PriceBar] = []
@@ -94,16 +118,28 @@ class YahooFinanceProvider:
             high = float(values["high"])
             low = float(values["low"])
             close = float(values["close"])
-            if min(high, low, close) <= 0 or high < low:
+            open_price = float(values["open"])
+            if (
+                not all(math.isfinite(value) for value in (open_price, high, low, close))
+                or min(open_price, high, low, close) <= 0
+                or high < low
+                or not low <= open_price <= high
+                or not low <= close <= high
+            ):
                 continue
             bars.append(
                 PriceBar(
                     date=datetime.fromtimestamp(timestamp, tz=timezone).date(),
-                    open=float(values["open"]),
+                    open=open_price,
                     high=high,
                     low=low,
                     close=close,
                     volume=int(values["volume"]),
+                    adjusted_close=(
+                        float(adjusted[index])
+                        if index < len(adjusted) and adjusted[index] is not None
+                        else None
+                    ),
                 )
             )
         if not bars:

@@ -11,7 +11,7 @@ from uuid import uuid4
 from .coverage import CoverageEntry
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -141,6 +141,18 @@ CREATE TABLE IF NOT EXISTS conclusions (
     rationale_json TEXT NOT NULL,
     system_recorded_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS evidence_observations (
+    evidence_id TEXT NOT NULL REFERENCES evidence(evidence_id),
+    observation_id TEXT NOT NULL REFERENCES observations(observation_id),
+    PRIMARY KEY(evidence_id, observation_id)
+);
+
+CREATE TABLE IF NOT EXISTS conclusion_evidence (
+    conclusion_id TEXT NOT NULL REFERENCES conclusions(conclusion_id),
+    evidence_id TEXT NOT NULL REFERENCES evidence(evidence_id),
+    PRIMARY KEY(conclusion_id, evidence_id)
+);
 """
 
 
@@ -172,6 +184,8 @@ class ObservationRecord:
 
 class ResearchDatabase:
     def __init__(self, path: str | Path = ":memory:") -> None:
+        if str(path) != ":memory:":
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(str(path))
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
@@ -242,6 +256,24 @@ class ResearchDatabase:
             )
         return instrument_id
 
+    def get_or_create_instrument(
+        self,
+        symbol: str,
+        market: str,
+        name: str | None,
+        valid_from: datetime | str,
+        recorded_at: datetime | str | None = None,
+    ) -> str:
+        row = self.connection.execute(
+            """SELECT instrument_id FROM instruments
+               WHERE symbol=? AND market=? AND valid_to IS NULL
+               ORDER BY system_recorded_at DESC LIMIT 1""",
+            (symbol, market),
+        ).fetchone()
+        if row is not None:
+            return str(row["instrument_id"])
+        return self.add_instrument(symbol, market, name, valid_from, recorded_at)
+
     def start_run(
         self,
         symbol: str,
@@ -258,6 +290,56 @@ class ResearchDatabase:
                 (run_id, symbol, market, _iso(as_of), depth, _iso(utc_now())),
             )
         return run_id
+
+    def add_raw_document(
+        self,
+        *,
+        source_id: str,
+        url: str,
+        content_hash: str,
+        retrieved_at: datetime | str,
+        title: str | None = None,
+        media_type: str = "application/json",
+        event_time: datetime | str | None = None,
+        parser_version: str = "1",
+        storage_status: str = "hash_only",
+    ) -> str:
+        existing = self.connection.execute(
+            """SELECT document_id FROM raw_documents
+               WHERE source_id=? AND url=? AND content_hash=?""",
+            (source_id, url, content_hash),
+        ).fetchone()
+        if existing is not None:
+            return str(existing["document_id"])
+        document_id = str(uuid4())
+        with self.connection:
+            self.connection.execute(
+                """INSERT INTO raw_documents
+                   (document_id, source_id, url, title, content_hash, media_type,
+                    event_time, retrieved_at, parser_version, storage_status)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    document_id, source_id, url, title, content_hash, media_type,
+                    _iso(event_time) if event_time else None, _iso(retrieved_at),
+                    parser_version, storage_status,
+                ),
+            )
+        return document_id
+
+    def finish_run(
+        self,
+        run_id: str,
+        status: str,
+        completed_at: datetime | str | None = None,
+    ) -> None:
+        with self.connection:
+            cursor = self.connection.execute(
+                """UPDATE research_runs SET status=?, completed_at=?
+                   WHERE run_id=? AND completed_at IS NULL""",
+                (status, _iso(completed_at or utc_now()), run_id),
+            )
+        if cursor.rowcount != 1:
+            raise ValueError(f"找不到執行中研究 run: {run_id}")
 
     def add_observation(
         self,
@@ -277,12 +359,15 @@ class ResearchDatabase:
         observation_id = str(uuid4())
         valid = _iso(valid_time)
         revision_row = self.connection.execute(
-            """SELECT COALESCE(MAX(revision), 0) + 1 AS revision
+            """SELECT observation_id, revision
                FROM observations
                WHERE instrument_id=? AND field_id=? AND source_id=? AND valid_time=?""",
             (instrument_id, field_id, source_id, valid),
-        ).fetchone()
-        revision = int(revision_row["revision"])
+        ).fetchall()
+        previous = max(revision_row, key=lambda row: int(row["revision"])) if revision_row else None
+        revision = int(previous["revision"]) + 1 if previous is not None else 1
+        if supersedes is None and previous is not None:
+            supersedes = str(previous["observation_id"])
         number = float(value) if isinstance(value, (float, int)) else None
         text = value if isinstance(value, str) else None
         with self.connection:
@@ -357,6 +442,7 @@ class ResearchDatabase:
         event_time: datetime | str | None = None,
         published_at: datetime | str | None = None,
         document_id: str | None = None,
+        observation_ids: Iterable[str] = (),
     ) -> str:
         dimensions = (
             "source_reliability", "claim_support", "independence", "recency",
@@ -379,6 +465,11 @@ class ResearchDatabase:
                     _iso(published_at) if published_at else None, _iso(retrieved_at),
                     *(quality[name] for name in dimensions), evidence_status,
                 ),
+            )
+            self.connection.executemany(
+                """INSERT INTO evidence_observations(evidence_id, observation_id)
+                   VALUES (?, ?)""",
+                ((evidence_id, observation_id) for observation_id in observation_ids),
             )
         return evidence_id
 
@@ -405,6 +496,7 @@ class ResearchDatabase:
         verdict: str,
         confidence: str,
         evidence_ids: list[str],
+        details: dict[str, Any] | None = None,
     ) -> str:
         conclusion_id = str(uuid4())
         with self.connection:
@@ -415,8 +507,16 @@ class ResearchDatabase:
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
                     conclusion_id, run_id, dimension, verdict, confidence,
-                    json.dumps({"evidence_ids": evidence_ids}, ensure_ascii=False),
+                    json.dumps(
+                        {"evidence_ids": evidence_ids, **(details or {})},
+                        ensure_ascii=False,
+                    ),
                     _iso(utc_now()),
                 ),
+            )
+            self.connection.executemany(
+                """INSERT INTO conclusion_evidence(conclusion_id, evidence_id)
+                   VALUES (?, ?)""",
+                ((conclusion_id, evidence_id) for evidence_id in evidence_ids),
             )
         return conclusion_id
