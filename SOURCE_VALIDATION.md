@@ -1,6 +1,7 @@
 # 官方來源驗證紀錄
 
-最近驗證時間：2026-10-17 10:38（Asia/Taipei）
+新增公司／公告端點最近驗證：2026-10-18 18:04（Asia/Taipei）。
+下列原六端點表格保留 2026-10-17 10:38 的歷史結果；後續可用性變化見文末，不代表現在全部可用。
 
 ## 結果
 
@@ -62,3 +63,36 @@ PYTHONPATH=src python -m tw_stock_swing sources --live
 不可驗證時為 `partial` 並回傳 3，
 端點失敗時為 `failed` 並回傳 2。資料日期、交易日曆與跨來源一致性由 `research` 的決策
 閘門另行判斷。官方條款、限流與長期保存政策仍需逐資料集完成法律及營運驗證。
+
+## 第 2A 批：公司主檔與公告 metadata（2026-10-18）
+
+| 連接器 | 官方路徑 | 實測樣本與結果 |
+|---|---|---|
+| twse_profile | `openapi.twse.com.tw/v1/opendata/t187ap03_L` | 2330，六欄可解析，出表日 2026-10-17 |
+| tpex_profile | `www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O` | 6488，六欄可解析，出表日 2026-10-18 |
+| twse_announcements | `openapi.twse.com.tw/v1/opendata/t187ap04_L` | 2072，一筆公告，六項 metadata 可解析，出表日 2026-10-18 |
+| tpex_announcements | `www.tpex.org.tw/openapi/v1/mopsfin_t187ap04_O` | 4747，一筆公告，六項 metadata 可解析，出表日 2026-10-18 |
+
+證據：`audit/company_source_shapes.json`（先前欄位探索）、`audit/company_live_twse.json`、
+`audit/company_live_tpex.json`、`audit/announcement_live_samples.json`。後三檔保存實際取得時間與
+內容雜湊；公司樣本 2330／6488 的公告快照無匹配列，因此 `company` 退出 3，而不是宣稱沒有事件。
+另外選取當時快照有公告的 2072／4747 驗證時間和欄位。這些結果只代表單次抽樣。
+
+已處理上市中文與上櫃英文主檔欄名、公告 `主旨 ` 尾空白、民國年月日、數字型短時間如
+`70003`（07:00:03）。發布時間含台北時區，事實發生日保留日期粒度，不杜撰秒級時間。
+更正保留與去重由合成測試驗證，不宣稱實測樣本恰有更正；事件鍵是啟發式欄位雜湊。
+全文僅在記憶體內參與版本雜湊，不保存或輸出；沒有讀全文分析、歷史完整性或缺席證明。
+未完成逐資料集條款、長期保存與再散布權複核，不得把官方端點可連線當成授權完成。
+
+`sources --live` 仍只檢查原六端點。新端點以 `company 2330 --market TWSE`／
+`company 6488 --market TPEx` 查詢，且已整合到 `research`。
+
+### 後續可用性與端到端結果
+
+第 1 批修後檢查 `audit/postfix_live_sources.json`：3 ok、1 partial、2 failed；
+TWSE 法人因執行環境未允許 `www.twse.com.tw` 而 tunnel 403，TPEx 行情曾回傳非 JSON，
+TWSE 融資券缺可驗證日期。這些限制沒有靠降低標準繞過。
+
+本批 `audit/batch2a_live_research.json`：2330 完整研究命令退出 4，`insufficient`、
+`decision_eligible=false`；公司兩來源接入成功，coverage 恰有 64 項，正式交易價位均為 null。
+此命令使用 `--no-persist`；SQLite 落庫與舊版 schema 升級另外由離線整合測試驗證。

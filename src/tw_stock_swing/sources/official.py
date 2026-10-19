@@ -125,6 +125,8 @@ def parse_number(value: Any) -> int | float | None:
         number = float(text)
     except ValueError:
         return None
+    if not math.isfinite(number):
+        return None
     return int(number) if number.is_integer() else number
 
 
@@ -235,6 +237,10 @@ class OfficialTabularConnector:
             if isinstance(records, list) and records and isinstance(records[0], list):
                 if not isinstance(fields, list) or not all(isinstance(field, str) for field in fields):
                     raise ConnectorError(f"{self.connector_id} 表格式 JSON 缺少 fields")
+                if len(set(fields)) != len(fields) or any(
+                    not isinstance(row, list) or len(row) != len(fields) for row in records
+                ):
+                    raise ConnectorError(f"{self.connector_id} 表格欄名重複或列長度不一致")
                 report_date = payload.get("date")
                 records = [
                     {**dict(zip(fields, row)), **({"Date": report_date} if report_date else {})}
@@ -245,6 +251,8 @@ class OfficialTabularConnector:
             records = payload
         if not isinstance(records, list):
             raise ConnectorError(f"{self.connector_id} JSON 頂層必須是陣列或含 data 陣列")
+        if any(not isinstance(candidate, dict) for candidate in records):
+            raise ConnectorError(f"{self.connector_id} 資料列必須是物件，不可混合格式")
 
         normalized_symbol = symbol.strip().upper().split(".", 1)[0]
         record: Mapping[str, Any] | None = None
@@ -253,8 +261,9 @@ class OfficialTabularConnector:
                 continue
             candidate_symbol = str(_first(candidate, self.symbol_aliases) or "").strip().upper()
             if candidate_symbol == normalized_symbol:
+                if record is not None:
+                    raise ConnectorError(f"{self.connector_id} 同一股票有重複資料列")
                 record = self.prepare_record(candidate)
-                break
 
         observations: list[NormalizedObservation] = []
         coverage: list[CoverageEntry] = []
@@ -284,6 +293,10 @@ class OfficialTabularConnector:
                 )
             )
             coverage.append(CoverageEntry(mapping.field_id, "available", "official_payload", self.source_id, fetched_at))
+        invalid = _invalid_observations(observations)
+        observations = [item for item in observations if item.field_id not in invalid]
+        coverage = [replace(item, status="conflicting", reason=invalid[item.field_id])
+                    if item.field_id in invalid else item for item in coverage]
         return ConnectorResult(
             self.connector_id,
             self.source_id,
@@ -296,6 +309,39 @@ class OfficialTabularConnector:
 
     def prepare_record(self, record: Mapping[str, Any]) -> Mapping[str, Any]:
         return record
+
+
+def _invalid_observations(observations: list[NormalizedObservation]) -> dict[str, str]:
+    """Quarantine invalid observations; retain one explicit coverage state each."""
+    values = {item.field_id: item.value for item in observations}
+    invalid: dict[str, str] = {}
+    price_fields = {f"market.{key}" for key in ("open", "high", "low", "close")}
+    for item in observations:
+        value = item.value
+        if not isinstance(value, (int, float)):
+            continue
+        # Net flows and price changes may be negative; turnover/balances may not.
+        signed = item.field_id.endswith(".net") or item.field_id == "market.change"
+        if not signed and value < 0:
+            invalid[item.field_id] = "negative_unsigned_value"
+        if item.field_id in price_fields and value <= 0:
+            invalid[item.field_id] = "nonpositive_price"
+        if item.unit in {"shares", "lots", "trades"} and int(value) != value:
+            invalid[item.field_id] = "noninteger_count"
+    if price_fields <= values.keys():
+        low, high = values["market.low"], values["market.high"]
+        if not (low <= values["market.open"] <= high and low <= values["market.close"] <= high):
+            invalid.update({field: "inconsistent_ohlc" for field in price_fields})
+    for group in ("foreign", "trust", "dealer"):
+        keys = [f"institutional.{group}.{part}" for part in ("buy", "sell", "net")]
+        if all(key in values for key in keys) and values[keys[0]] - values[keys[1]] != values[keys[2]]:
+            invalid.update({key: "buy_minus_sell_disagrees_with_net" for key in keys})
+    totals = {"market.volume", "market.value", "market.transactions"}
+    if totals <= values.keys() and not (totals & invalid.keys()):
+        positive = [values[key] > 0 for key in totals]
+        if any(positive) and not all(positive):
+            invalid.update({key: "inconsistent_volume_value_transactions" for key in totals})
+    return invalid
 
 
 MARKET_MAPPINGS = (

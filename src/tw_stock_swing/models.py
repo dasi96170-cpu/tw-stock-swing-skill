@@ -22,6 +22,7 @@ class MarketData:
     name: str
     bars: tuple[PriceBar, ...]
     source: str
+    quality_issues: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,10 +55,23 @@ class AnalysisResult:
     reasons: tuple[str, ...]
     risks: tuple[str, ...]
     freshness_warning: str | None
+    screening_eligible: bool = True
+    screening_blockers: tuple[str, ...] = ()
+    screening_policy_version: str = "selection-safety-1"
+    median_turnover_proxy_20: float = 0.0
+    min_median_turnover_proxy: float = 10_000_000.0
+    turnover_proxy_ratio: float = 0.0
+    volume_signal_usable: bool = False
+    session_calendar_verified: bool = False
+    unverified_weekday_gaps: tuple[str, ...] = ()
+    return_window_observations: int = 20
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *, decision_eligible: bool = False) -> dict[str, Any]:
         data = asdict(self)
         data["data_date"] = self.data_date.isoformat()
         data["reasons"] = list(self.reasons)
         data["risks"] = list(self.risks)
+        if not decision_eligible or not self.screening_eligible or self.freshness_status != "current":
+            for field in ("entry_low", "entry_high", "stop_loss", "target_1", "target_2", "risk_reward_1"):
+                data[field] = None
         return data

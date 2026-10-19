@@ -1,0 +1,116 @@
+{
+  "status": "partial",
+  "scope": "latest_official_snapshot_only",
+  "decision_eligible": false,
+  "sources": [
+    {
+      "connector_id": "twse_profile",
+      "source_id": "twse_openapi",
+      "endpoint": "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+      "symbol": "2330",
+      "market": "TWSE",
+      "fetched_at": "2026-10-18T10:03:02.544208+00:00",
+      "source_date": "2026-10-17",
+      "fields": {
+        "identity.legal_name": "台灣積體電路製造股份有限公司",
+        "identity.english_abbreviation": "TSMC",
+        "identity.industry_code": "24",
+        "identity.listing_date": "1994-09-05",
+        "identity.paid_in_capital": 259323700670,
+        "identity.issue_shares_or_tdr_underlying": 25932370067
+      },
+      "announcements": [],
+      "coverage": [
+        {
+          "field_id": "identity.english_abbreviation",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.industry_code",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.issue_shares_or_tdr_underlying",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.legal_name",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.listing_date",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.paid_in_capital",
+          "status": "available",
+          "reason": "profile_snapshot"
+        }
+      ],
+      "issues": [],
+      "content_hash": "f64690ff05f18972cb871c5fb88506a3b78f9186c532cd1ea5134035a495427c",
+      "error": null,
+      "scope": "latest_official_snapshot_only",
+      "absence_proven": false,
+      "body_stored": false,
+      "parser_version": "company-1"
+    },
+    {
+      "connector_id": "twse_announcements",
+      "source_id": "twse_openapi",
+      "endpoint": "https://openapi.twse.com.tw/v1/opendata/t187ap04_L",
+      "symbol": "2330",
+      "market": "TWSE",
+      "fetched_at": "2026-10-18T10:03:02.545317+00:00",
+      "source_date": "2026-10-18",
+      "fields": {},
+      "announcements": [],
+      "coverage": [
+        {
+          "field_id": "material_events.announcements",
+          "status": "available",
+          "reason": "returned_snapshot_only"
+        },
+        {
+          "field_id": "material_events.event_date",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.headline",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.published_at",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.revision_hash",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.source_locator",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        }
+      ],
+      "issues": [
+        "no_matching_rows_in_returned_snapshot_not_proof_of_absence"
+      ],
+      "content_hash": "f7548e98f1a67f1aa3c83be1d0fc1ebad83ab101d068fdf60e820a147c5a7d43",
+      "error": null,
+      "scope": "latest_official_snapshot_only",
+      "absence_proven": false,
+      "body_stored": false,
+      "parser_version": "company-1"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+import math
 from pathlib import Path
 import sqlite3
 from typing import Any, Iterable
@@ -11,7 +12,7 @@ from uuid import uuid4
 from .coverage import CoverageEntry
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -153,6 +154,16 @@ CREATE TABLE IF NOT EXISTS conclusion_evidence (
     evidence_id TEXT NOT NULL REFERENCES evidence(evidence_id),
     PRIMARY KEY(conclusion_id, evidence_id)
 );
+
+CREATE TABLE IF NOT EXISTS research_supplements (
+    run_id TEXT NOT NULL REFERENCES research_runs(run_id),
+    connector_id TEXT NOT NULL,
+    source_id TEXT NOT NULL REFERENCES sources(source_id),
+    retrieved_at TEXT NOT NULL,
+    source_date TEXT,
+    payload_json TEXT NOT NULL,
+    PRIMARY KEY(run_id, connector_id)
+);
 """
 
 
@@ -162,10 +173,10 @@ def utc_now() -> datetime:
 
 def _iso(value: datetime | str) -> str:
     if isinstance(value, str):
-        return value
-    if value.tzinfo is None:
+        value = datetime.fromisoformat(value)
+    if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("時間必須包含時區")
-    return value.astimezone(timezone.utc).isoformat()
+    return value.astimezone(timezone.utc).isoformat(timespec="microseconds")
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,6 +199,8 @@ class ResearchDatabase:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(str(path))
         self.connection.row_factory = sqlite3.Row
+        # Normalize legacy offset strings on read, without rewriting evidence.
+        self.connection.create_function("utc_iso", 1, _iso, deterministic=True)
         self.connection.execute("PRAGMA foreign_keys = ON")
 
     def close(self) -> None:
@@ -361,13 +374,15 @@ class ResearchDatabase:
         revision_row = self.connection.execute(
             """SELECT observation_id, revision
                FROM observations
-               WHERE instrument_id=? AND field_id=? AND source_id=? AND valid_time=?""",
+               WHERE instrument_id=? AND field_id=? AND source_id=? AND utc_iso(valid_time)=?""",
             (instrument_id, field_id, source_id, valid),
         ).fetchall()
         previous = max(revision_row, key=lambda row: int(row["revision"])) if revision_row else None
         revision = int(previous["revision"]) + 1 if previous is not None else 1
         if supersedes is None and previous is not None:
             supersedes = str(previous["observation_id"])
+        if isinstance(value, bool) or (isinstance(value, (float, int)) and not math.isfinite(value)):
+            raise ValueError("觀察數值必須有限且不可為布林值")
         number = float(value) if isinstance(value, (float, int)) else None
         text = value if isinstance(value, str) else None
         with self.connection:
@@ -403,13 +418,13 @@ class ResearchDatabase:
             """SELECT * FROM (
                  SELECT o.*,
                         ROW_NUMBER() OVER (
-                          PARTITION BY field_id, source_id, valid_time
-                          ORDER BY revision DESC, system_recorded_at DESC
+                          PARTITION BY field_id, source_id, utc_iso(valid_time)
+                          ORDER BY revision DESC, utc_iso(system_recorded_at) DESC
                         ) AS row_rank
                  FROM observations o
-                 WHERE instrument_id=? AND known_at<=? AND system_recorded_at<=?
+                 WHERE instrument_id=? AND utc_iso(known_at)<=? AND utc_iso(system_recorded_at)<=?
                ) WHERE row_rank=1
-               ORDER BY field_id, valid_time""",
+               ORDER BY field_id, utc_iso(valid_time)""",
             (instrument_id, _iso(as_of), _iso(as_of)),
         ).fetchall()
         return tuple(
@@ -419,9 +434,9 @@ class ResearchDatabase:
                 value_number=row["value_number"],
                 value_text=row["value_text"],
                 unit=row["unit"],
-                valid_time=row["valid_time"],
-                known_at=row["known_at"],
-                system_recorded_at=row["system_recorded_at"],
+                valid_time=_iso(row["valid_time"]),
+                known_at=_iso(row["known_at"]),
+                system_recorded_at=_iso(row["system_recorded_at"]),
                 source_id=row["source_id"],
                 revision=row["revision"],
             )
@@ -520,3 +535,14 @@ class ResearchDatabase:
                 ((conclusion_id, evidence_id) for evidence_id in evidence_ids),
             )
         return conclusion_id
+
+    def save_supplement(self, run_id: str, payload: dict[str, Any]) -> None:
+        """Store normalized metadata with explicit date uncertainty, never full bodies."""
+        with self.connection:
+            self.connection.execute(
+                """INSERT INTO research_supplements
+                   (run_id, connector_id, source_id, retrieved_at, source_date, payload_json)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (run_id, payload['connector_id'], payload['source_id'], _iso(payload['fetched_at']),
+                 payload['source_date'], json.dumps(payload, ensure_ascii=False, allow_nan=False)),
+            )

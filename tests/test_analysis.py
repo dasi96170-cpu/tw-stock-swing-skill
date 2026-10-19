@@ -20,6 +20,7 @@ def make_market_data(rising: bool = True, count: int = 90) -> MarketData:
                 high=close + 0.8,
                 low=close - 0.8,
                 close=close,
+                adjusted_close=close,
                 volume=volume,
             )
         )
@@ -70,6 +71,7 @@ class AnalysisTests(unittest.TestCase):
                     high=bar.high,
                     low=bar.low,
                     close=bar.close,
+                    adjusted_close=bar.adjusted_close,
                     volume=bar.volume,
                 )
                 for bar in data.bars

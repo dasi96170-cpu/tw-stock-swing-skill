@@ -1,0 +1,426 @@
+[
+  {
+    "name": "tpex_market_diagnostic",
+    "url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+    "retrieved_at": "2026-10-17T07:05:18.354244+00:00",
+    "error": "The read operation timed out"
+  },
+  {
+    "name": "twse_margin_diagnostic",
+    "url": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
+    "retrieved_at": "2026-10-17T07:05:18.355398+00:00",
+    "http_status": 200,
+    "content_type": "application/json",
+    "bytes": 468388,
+    "sha256": "11978fea059fd100920d892b1b1342de4a16eaff3f2223ab6dde16d1e4355e95",
+    "row_count": 1301,
+    "first_record_keys": [
+      "股票代號",
+      "股票名稱",
+      "融資買進",
+      "融資賣出",
+      "融資現金償還",
+      "融資前日餘額",
+      "融資今日餘額",
+      "融資限額",
+      "融券買進",
+      "融券賣出",
+      "融券現券償還",
+      "融券前日餘額",
+      "融券今日餘額",
+      "融券限額",
+      "資券互抵",
+      "註記"
+    ],
+    "first_record_date_fields": {}
+  },
+  {
+    "name": "twse_schema_discovery",
+    "url": "https://openapi.twse.com.tw/v1/swagger.json",
+    "retrieved_at": "2026-10-17T07:05:18.355916+00:00",
+    "http_status": 200,
+    "content_type": "application/json",
+    "bytes": 309960,
+    "sha256": "06e1cea82448361e733a0ad1ae16e52f5d5d6b71905acd078472f852c32c0eb0",
+    "top_level_keys": [
+      "swagger",
+      "info",
+      "host",
+      "basePath",
+      "tags",
+      "schemes",
+      "paths"
+    ],
+    "relevant_paths": {
+      "/opendata/t187ap45_L": [
+        "上市公司股利分派情形"
+      ],
+      "/opendata/t187ap46_L_19": [
+        "上市公司企業ESG資訊揭露彙總資料-風險管理政策"
+      ],
+      "/opendata/t187ap46_L_8": [
+        "上市公司企業ESG資訊揭露彙總資料-氣候相關議題管理"
+      ],
+      "/opendata/t187ap47_L": [
+        "基金基本資料彙總表"
+      ],
+      "/opendata/t187ap05_P": [
+        "公開發行公司每月營業收入彙總表"
+      ],
+      "/opendata/t187ap07_X_ci": [
+        "公發公司資產負債表-一般業"
+      ],
+      "/opendata/t187ap07_X_mim": [
+        "公發公司資產負債表-異業"
+      ],
+      "/opendata/t187ap06_X_basi": [
+        "公發公司綜合損益表-金融業"
+      ],
+      "/opendata/t187ap06_X_bd": [
+        "公發公司綜合損益表-證券期貨業"
+      ],
+      "/opendata/t187ap06_X_ci": [
+        "公發公司綜合損益表-一般業"
+      ],
+      "/opendata/t187ap06_X_fh": [
+        "公發公司綜合損益表-金控業"
+      ],
+      "/opendata/t187ap06_X_ins": [
+        "公發公司綜合損益表-保險業"
+      ],
+      "/opendata/t187ap06_X_mim": [
+        "公發公司綜合損益表-異業"
+      ],
+      "/brokerService/brokerList": [
+        "證券商總公司基本資料"
+      ],
+      "/exchangeReport/BWIBBU_ALL": [
+        "上市個股日本益比、殖利率及股價淨值比（依代碼查詢）"
+      ],
+      "/exchangeReport/TWTB4U": [
+        "上市股票每日當日沖銷交易標的及統計"
+      ],
+      "/exchangeReport/STOCK_FIRST": [
+        "每日第一上市外國股票成交量值"
+      ],
+      "/exchangeReport/BWIBBU_d": [
+        "上市個股日本益比、殖利率及股價淨值比（依日期查詢）"
+      ],
+      "/SBL/TWT96U": [
+        "上市上櫃股票當日可借券賣出股數"
+      ],
+      "/opendata/t187ap04_L": [
+        "上市公司每日重大訊息"
+      ],
+      "/opendata/t187ap03_L": [
+        "上市公司基本資料"
+      ],
+      "/opendata/t187ap05_L": [
+        "上市公司每月營業收入彙總表"
+      ],
+      "/opendata/t187ap15_L": [
+        "上市公司截至各季綜合損益財測達成情形(簡式)"
+      ],
+      "/opendata/t187ap16_L": [
+        "上市公司當季綜合損益經會計師查核(核閱)數與當季預測數差異達百分之十以上者，或截至當季累計差異達百分之二十以上者(簡式)"
+      ],
+      "/opendata/t187ap17_L": [
+        "上市公司營益分析查詢彙總表(全體公司彙總報表)"
+      ],
+      "/opendata/t187ap18": [
+        "證券商基本資料"
+      ],
+      "/opendata/t187ap23_L": [
+        "上市公司違反資訊申報、重大訊息及說明記者會規定專區"
+      ],
+      "/opendata/t187ap31_L": [
+        "上市公司財務報告經監察人承認情形"
+      ],
+      "/opendata/t187ap03_P": [
+        "公開發行公司基本資料"
+      ],
+      "/announcement/punish": [
+        "集中市場公布處置股票"
+      ],
+      "/opendata/t187ap38_L": [
+        "上市公司股東會公告-召集股東常(臨時)會公告資料彙總表(95年度起適用)"
+      ],
+      "/opendata/t187ap37_L": [
+        "上市權證基本資料彙總表"
+      ],
+      "/opendata/t187ap26_L": [
+        "上市公司經營權及營業範圍異(變)動專區-經營權異動且營業範圍重大變更停止買賣公司"
+      ],
+      "/announcement/notetrans": [
+        "集中市場公布注意累計次數可能達處置標準資訊"
+      ],
+      "/announcement/notice": [
+        "集中市場當日公布注意股票"
+      ],
+      "/opendata/t187ap25_L": [
+        "上市公司經營權及營業範圍異(變)動專區-營業範圍重大變更公司"
+      ],
+      "/opendata/t187ap27_L": [
+        "上市公司經營權及營業範圍異(變)動專區-經營權異動且營業範圍重大變更列為變更交易公司"
+      ],
+      "/opendata/OpenData_BRK02": [
+        "證券商分公司基本資料"
+      ],
+      "/exchangeReport/TWT48U_ALL": [
+        "上市股票除權除息預告表"
+      ],
+      "/opendata/t187ap06_L_bd": [
+        "上市公司綜合損益表(證券期貨業)"
+      ],
+      "/opendata/t187ap06_L_ci": [
+        "上市公司綜合損益表(一般業)"
+      ],
+      "/opendata/t187ap06_L_fh": [
+        "上市公司綜合損益表(金控業)"
+      ],
+      "/opendata/t187ap06_L_ins": [
+        "上市公司綜合損益表(保險業)"
+      ],
+      "/opendata/t187ap06_L_mim": [
+        "上市公司綜合損益表(異業)"
+      ],
+      "/opendata/t187ap07_L_bd": [
+        "上市公司資產負債表(證券期貨業)"
+      ],
+      "/opendata/t187ap07_L_ci": [
+        "上市公司資產負債表(一般業)"
+      ],
+      "/opendata/t187ap07_L_fh": [
+        "上市公司資產負債表(金控業)"
+      ],
+      "/opendata/t187ap07_L_ins": [
+        "上市公司資產負債表(保險業)"
+      ],
+      "/opendata/t187ap07_L_mim": [
+        "上市公司資產負債表(異業)"
+      ],
+      "/opendata/t187ap07_X_basi": [
+        "公發公司資產負債表-金融業"
+      ],
+      "/opendata/t187ap07_X_bd": [
+        "公發公司資產負債表-證券期貨業"
+      ],
+      "/opendata/t187ap07_X_fh": [
+        "公發公司資產負債表-金控業"
+      ],
+      "/opendata/t187ap07_X_ins": [
+        "公發公司資產負債表-保險業"
+      ],
+      "/opendata/t187ap11_P": [
+        "公發公司董監事持股餘額明細"
+      ],
+      "/opendata/t187ap06_L_basi": [
+        "上市公司綜合損益表(金融業)"
+      ],
+      "/opendata/t187ap07_L_basi": [
+        "上市公司資產負債表(金融業)"
+      ]
+    }
+  },
+  {
+    "name": "tpex_schema_discovery",
+    "url": "https://www.tpex.org.tw/openapi/swagger.json",
+    "retrieved_at": "2026-10-17T07:05:18.356427+00:00",
+    "http_status": 200,
+    "content_type": "application/json",
+    "bytes": 476923,
+    "sha256": "05af7755d0d528626c104f7a8ccd7b00c6a0cf228d30bcb4669020e514eb0c7e",
+    "top_level_keys": [
+      "openapi",
+      "info",
+      "servers",
+      "paths",
+      "components"
+    ],
+    "relevant_paths": {
+      "/tpex_securities": [
+        "上櫃股票現股當沖交易標的資訊"
+      ],
+      "/tpex_mainboard_peratio_analysis": [
+        "上櫃股票個股本益比、殖利率、股價淨值比"
+      ],
+      "/tpex_intraday_trading_statistics": [
+        "上櫃股票現股當沖交易統計資訊"
+      ],
+      "/tpex_margin_sbl": [
+        "上櫃股票融券借券賣出餘額"
+      ],
+      "/tpex_trading_warning_information": [
+        "上櫃公布注意股票資訊"
+      ],
+      "/tpex_disposal_information": [
+        "上櫃處置有價證券資訊"
+      ],
+      "/tpex_trading_warning_note": [
+        "上櫃公布注意累計次數異常資訊"
+      ],
+      "/tpex_short_sell": [
+        "上櫃當日融券賣出與借券賣出成交量值"
+      ],
+      "/tpex_intraday_fee": [
+        "上櫃應付現股當日沖銷券差借券費率"
+      ],
+      "/tpex_pe_ratio_top10": [
+        "上櫃歷史個股本益比排行"
+      ],
+      "/tpex_esb_disposal_information": [
+        "興櫃處置有價證券資訊"
+      ],
+      "/tpex_esb_warning_information": [
+        "興櫃公布注意有價證券資訊"
+      ],
+      "/tpex_warrant_gold": [
+        "黃金現貨權證發行基本資料"
+      ],
+      "/tpex_warrant_issue": [
+        "上櫃權證發行基本資料"
+      ],
+      "/tpex_warrant_wcb_issue": [
+        "上櫃牛熊證發行基本資料(不含展延型牛熊證)"
+      ],
+      "/tpex_warrant_wxy_issue": [
+        "上櫃展延型牛熊證發行基本資料"
+      ],
+      "/mopsfin_t187ap05_OA": [
+        "二十九大類股營收變化統計表"
+      ],
+      "/mopsfin_t187ap05_OB": [
+        "發行公司營收創新高一覽表(上櫃)"
+      ],
+      "/mopsfin_t187ap37_O": [
+        "上櫃權證基本資料彙總表"
+      ],
+      "/mopsfin_t187ap31_O": [
+        "上櫃公司財務報告經監察人承認情形"
+      ],
+      "/mopsfin_t187ap25_O": [
+        "上櫃公司經營權及營業範圍異(變)動專區-營業範圍重大變更公司"
+      ],
+      "/mopsfin_t187ap03_O": [
+        "上櫃股票基本資料"
+      ],
+      "/mopsfin_t187ap03_R": [
+        "興櫃公司基本資料"
+      ],
+      "/mopsfin_t187ap04_O": [
+        "上櫃公司每日重大訊息"
+      ],
+      "/mopsfin_t187ap26_O": [
+        "上櫃公司經營權及營業範圍異(變)動專區-經營權異動且營業範圍重大變更停止買賣公司"
+      ],
+      "/mopsfin_t187ap27_O": [
+        "上櫃公司經營權及營業範圍異(變)動專區-經營權異動且營業範圍重大變更列為變更交易公司"
+      ],
+      "/mopsfin_t187ap39_O": [
+        "上櫃股利分派情形-董事會通過"
+      ],
+      "/mopsfin_t187ap07_O_basi": [
+        "上櫃公司資產負債表(金融業)"
+      ],
+      "/mopsfin_t187ap07_O_bd": [
+        "上櫃公司資產負債表(證券期貨業)"
+      ],
+      "/mopsfin_t187ap07_O_ci": [
+        "上櫃公司資產負債表(一般業)"
+      ],
+      "/mopsfin_t187ap07_O_fh": [
+        "上櫃公司資產負債表(金控業)"
+      ],
+      "/mopsfin_t187ap07_O_ins": [
+        "上櫃公司資產負債表(保險業)"
+      ],
+      "/mopsfin_t187ap07_O_mim": [
+        "上櫃公司資產負債表(異業)"
+      ],
+      "/mopsfin_t187ap06_O_basi": [
+        "上櫃公司綜合損益表(金融業)"
+      ],
+      "/mopsfin_t187ap06_O_bd": [
+        "上櫃公司綜合損益表(證券期貨業)"
+      ],
+      "/mopsfin_t187ap06_O_ci": [
+        "上櫃公司綜合損益表(一般業)"
+      ],
+      "/mopsfin_t187ap06_O_fh": [
+        "上櫃公司綜合損益表(金控業)"
+      ],
+      "/mopsfin_t187ap06_O_ins": [
+        "上櫃公司綜合損益表(保險業)"
+      ],
+      "/mopsfin_t187ap06_O_mim": [
+        "上櫃公司綜合損益表(異業)"
+      ],
+      "/mopsfin_t187ap06_O_basiA": [
+        "上櫃公司財報資訊(金融業)"
+      ],
+      "/mopsfin_t187ap06_O_bdA": [
+        "上櫃公司財報資訊(證券期貨業)"
+      ],
+      "/mopsfin_t187ap06_O_ciA": [
+        "上櫃公司財報資訊( 一般業)"
+      ],
+      "/mopsfin_t187ap06_O_fhA": [
+        "上櫃公司財報資訊(金控業)"
+      ],
+      "/mopsfin_t187ap06_O_insA": [
+        "上櫃公司財報資訊(保險業)"
+      ],
+      "/mopsfin_t187ap06_O_mimA": [
+        "上櫃公司財報資訊(異業)"
+      ],
+      "/mopsfin_t187ap07_U_bd": [
+        "興櫃公司資產負債表-證券期貨業"
+      ],
+      "/mopsfin_t187ap07_U_ci": [
+        "興櫃公司資產負債表-一般業"
+      ],
+      "/mopsfin_t187ap07_U_fh": [
+        "興櫃公司資產負債表-金控業"
+      ],
+      "/mopsfin_t187ap07_U_ins": [
+        "興櫃公司資產負債表-保險業"
+      ],
+      "/mopsfin_t187ap07_U_mim": [
+        "興櫃公司資產負債表-異業"
+      ],
+      "/mopsfin_t187ap06_U_basi": [
+        "興櫃公司綜合損益表-金融業"
+      ],
+      "/mopsfin_t187ap06_U_bd": [
+        "興櫃公司綜合損益表-證券期貨業"
+      ],
+      "/mopsfin_t187ap06_U_ci": [
+        "興櫃公司綜合損益表-一般業"
+      ],
+      "/mopsfin_t187ap06_U_fh": [
+        "興櫃公司綜合損益表-金控業"
+      ],
+      "/mopsfin_t187ap06_U_ins": [
+        "興櫃公司綜合損益表-保險業"
+      ],
+      "/mopsfin_t187ap06_U_mim": [
+        "興櫃公司綜合損益表-異業"
+      ],
+      "/mopsfin_t187ap07_U_basi": [
+        "興櫃公司資產負債表-金融業"
+      ],
+      "/mopsfin_t187ap15_O": [
+        "上櫃公司截至各季綜合損益財測達成情形(簡式)"
+      ],
+      "/mopsfin_t187ap16_O": [
+        "上櫃公司當季綜合損益經會計師查核(核閱)數與當季預測數差異達百分之十以上者，或截至當季累計差異達百分之二十以上者(簡式)"
+      ],
+      "/mopsfin_187ap17_O": [
+        "上櫃公司營益分析查詢彙總表(全體公司彙總報表)"
+      ],
+      "/mopsfin_t187ap23_O": [
+        "上櫃公司違反資訊申報、重大訊息及說明記者會規定專區"
+      ]
+    }
+  }
+]

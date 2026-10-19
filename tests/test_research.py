@@ -40,6 +40,7 @@ class FixedProvider:
                 high=101 + index * 0.2,
                 low=99 + index * 0.2,
                 close=100.5 + index * 0.2,
+                adjusted_close=100.5 + index * 0.2,
                 volume=2_000_000 if index == 89 else 1_000_000,
             )
             for index in range(90)
@@ -189,7 +190,8 @@ class ResearchTests(unittest.TestCase):
         self.assertIn("三大法人（單日淨額）", text)
         self.assertIn("融資融券", text)
         self.assertIn("來源健康", text)
-        self.assertIn("財報、營收、估值、新聞及重大事件缺口已列出", text)
+        self.assertIn("財報、營收、估值、外部新聞及其他重大事件缺口仍未完成", text)
+        self.assertIn("未查到公告不代表沒有事件", text)
         self.assertIn("正式交易計畫：未產生", text)
 
     def test_research_is_persisted_with_evidence_links(self) -> None:

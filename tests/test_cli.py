@@ -9,13 +9,14 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from tw_stock_swing.cli import main
+from tw_stock_swing.analysis import expected_completed_session
 from tw_stock_swing.coverage import CoverageEntry
 from tw_stock_swing.models import MarketData, PriceBar
 from tw_stock_swing.sources import ConnectorResult
 
 
 def fixture_market_data() -> MarketData:
-    start = date.today() - timedelta(days=80)
+    start = expected_completed_session(datetime.now(timezone.utc)) - timedelta(days=79)
     bars = tuple(
         PriceBar(
             date=start + timedelta(days=index),
@@ -23,6 +24,7 @@ def fixture_market_data() -> MarketData:
             high=101.0 + index * 0.2,
             low=99.5 + index * 0.2,
             close=100.5 + index * 0.2,
+            adjusted_close=100.5 + index * 0.2,
             volume=1_000_000 + index * 1_000,
         )
         for index in range(80)

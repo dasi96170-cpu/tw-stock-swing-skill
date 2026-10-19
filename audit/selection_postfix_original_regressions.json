@@ -1,0 +1,85 @@
+{
+  "baseline": "f0ba29b003dc9b28e119611032a34321c8be641e",
+  "cases": [
+    {
+      "case": "A01_adjusted_return",
+      "expected": "0% for constant raw and adjusted prices",
+      "actual": 0.0,
+      "defect_reproduced": false
+    },
+    {
+      "case": "A02_historical_cutoff",
+      "expected": "reject future data before scoring",
+      "actual": "日線包含截止時間之後的資料；不支援以目前行情進行歷史 PIT 分析",
+      "defect_reproduced": false
+    },
+    {
+      "case": "A03_nonfinite_official_number",
+      "expected": "reject or mark invalid/missing",
+      "actual": {
+        "value": null,
+        "status": "missing"
+      },
+      "defect_reproduced": false
+    },
+    {
+      "case": "A04_stale_partial_masks_age",
+      "expected": "old close still marked stale despite another missing field",
+      "actual": {
+        "health": "stale",
+        "close_status": "stale"
+      },
+      "defect_reproduced": false
+    },
+    {
+      "case": "A05_timezone_asof",
+      "expected": "one row: 10:00+08 is earlier than 03:00 UTC",
+      "actual": 1,
+      "defect_reproduced": false
+    },
+    {
+      "case": "A06_scan_partial_failure",
+      "expected": "partial/error status and nonzero exit when one requested stock fails",
+      "actual": {
+        "status": "partial",
+        "exit_code": 3,
+        "errors": {
+          "2317": "synthetic outage"
+        }
+      },
+      "defect_reproduced": false
+    },
+    {
+      "case": "A07_scan_gate",
+      "expected": "technical-only scan does not expose formal trade levels without decision gate",
+      "actual": {
+        "entry_low": null,
+        "scope": "technical_screen_only",
+        "decision_eligible": false
+      },
+      "defect_reproduced": false
+    },
+    {
+      "case": "A08_identity_mismatch",
+      "expected": "reject response symbol mismatch",
+      "actual": "股票身分不一致：請求 2330.TW，回應 2317.TW",
+      "defect_reproduced": false
+    },
+    {
+      "case": "A09_invalid_official_ohlc",
+      "expected": "reject high below low/open/close",
+      "actual": {
+        "market.open": "conflicting",
+        "market.high": "conflicting",
+        "market.low": "conflicting",
+        "market.close": "conflicting",
+        "market.change": "available",
+        "market.volume": "available",
+        "market.value": "available",
+        "market.transactions": "available"
+      },
+      "defect_reproduced": false
+    }
+  ],
+  "defects_reproduced": 0
+}

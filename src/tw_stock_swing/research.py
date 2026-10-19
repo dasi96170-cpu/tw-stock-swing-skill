@@ -4,15 +4,17 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
+import math
 from typing import Any, Mapping, Protocol
 from zoneinfo import ZoneInfo
 
 from .analysis import analyze_bars, expected_completed_session
 from .catalog import ResearchCatalog, load_catalog
-from .coverage import CoverageEntry, complete_coverage, summarize_by_category
+from .coverage import CoverageEntry, CoverageError, assert_strict_p0_coverage, complete_coverage, summarize_by_category
 from .models import AnalysisResult
-from .providers import YahooFinanceProvider
-from .sources import ConnectorResult, NormalizedObservation, OFFICIAL_CONNECTORS
+from .providers import DataProviderError, YahooFinanceProvider, symbol_candidates
+from .sources import ConnectorError, ConnectorResult, NormalizedObservation, OFFICIAL_CONNECTORS
+from .sources.company import CompanyResult, COMPANY_CONNECTORS, fetch_company_sources
 from .storage import ResearchDatabase
 
 
@@ -43,6 +45,8 @@ class SourceHealth:
     error: str | None = None
     content_hash: str | None = None
     valid_time_verified: bool = False
+    time_status: str = "unknown"
+    completeness_status: str = "unknown"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -57,6 +61,8 @@ class SourceHealth:
             "error": self.error,
             "content_hash": self.content_hash,
             "valid_time_verified": self.valid_time_verified,
+            "time_status": self.time_status,
+            "completeness_status": self.completeness_status,
         }
 
 
@@ -93,7 +99,7 @@ class ResearchReport:
     symbol: str
     name: str
     market: str
-    analysis: AnalysisResult
+    analysis: AnalysisResult | None
     official_observations: tuple[NormalizedObservation, ...]
     official_findings: tuple[str, ...]
     source_health: tuple[SourceHealth, ...]
@@ -104,6 +110,10 @@ class ResearchReport:
     warnings: tuple[str, ...]
     run_id: str | None = None
     database_path: str | None = None
+    company_sources: tuple[CompanyResult, ...] = ()
+    analysis_error: str | None = None
+    market_resolution: str = "provider_symbol"
+    routing_error: str | None = None
 
     @property
     def observations_by_id(self) -> dict[str, NormalizedObservation]:
@@ -122,7 +132,9 @@ class ResearchReport:
 
     @property
     def decision_eligible(self) -> bool:
-        return self.status == "complete" and not self.decision_blockers
+        return (self.status == "complete" and not self.decision_blockers
+                and self.analysis is not None and self.analysis.screening_eligible
+                and self.market in ACTIVE_CONNECTORS and not self.routing_error)
 
     def to_dict(self) -> dict[str, Any]:
         grouped: dict[str, dict[str, dict[str, Any]]] = {}
@@ -140,8 +152,8 @@ class ResearchReport:
         for item in self.coverage:
             status_counts[item.status] = status_counts.get(item.status, 0) + 1
 
-        analysis_payload = self.analysis.to_dict()
-        if not self.decision_eligible:
+        analysis_payload = self.analysis.to_dict(decision_eligible=self.decision_eligible) if self.analysis else None
+        if analysis_payload is not None and not self.decision_eligible:
             for field in (
                 "entry_low", "entry_high", "stop_loss", "target_1", "target_2",
                 "risk_reward_1",
@@ -153,11 +165,16 @@ class ResearchReport:
             "decision_eligible": self.decision_eligible,
             "decision_blockers": list(self.decision_blockers),
             "scope": "market_technical_institutional_margin",
+            "additional_scopes": ["company_profile", "official_announcement_metadata"],
+            "company_sources": [item.to_dict() for item in self.company_sources],
             "generated_at": self.generated_at.isoformat(),
             "symbol": self.symbol,
             "name": self.name,
             "market": self.market,
             "analysis": analysis_payload,
+            "analysis_error": self.analysis_error,
+            "market_resolution": self.market_resolution,
+            "routing_error": self.routing_error,
             "official": grouped,
             "official_findings": list(self.official_findings),
             "sources": [source.to_dict() for source in self.source_health],
@@ -191,15 +208,16 @@ def _health(result: ConnectorResult, generated_at: datetime) -> SourceHealth:
     missing = tuple(item.field_id for item in result.coverage if item.status != "available")
     valid_times = tuple(sorted({item.valid_time for item in result.observations}))
     expected = expected_completed_session(generated_at)
-    latest = valid_times[-1].astimezone(ZoneInfo("Asia/Taipei")).date() if valid_times else None
-    stale = latest is not None and latest < expected
-    future = latest is not None and latest > generated_at.astimezone(ZoneInfo("Asia/Taipei")).date()
+    dates = [value.astimezone(ZoneInfo("Asia/Taipei")).date() for value in valid_times]
+    stale = any(value < expected for value in dates)
+    future = any(value > expected for value in dates)
+    time_status = ("unverified_time" if not result.valid_time_verified or not dates else
+                   "future" if future else "stale" if stale else "ok")
+    completeness = "partial" if missing else "complete"
     status = (
         "failed" if result.error else
+        time_status if time_status != "ok" else
         "partial" if missing else
-        "unverified_time" if not result.valid_time_verified else
-        "future" if future else
-        "stale" if stale else
         "ok"
     )
     return SourceHealth(
@@ -214,6 +232,8 @@ def _health(result: ConnectorResult, generated_at: datetime) -> SourceHealth:
         error=result.error,
         content_hash=result.content_hash,
         valid_time_verified=result.valid_time_verified,
+        time_status=time_status,
+        completeness_status=completeness,
     )
 
 
@@ -242,38 +262,40 @@ def _coverage_items(
     catalog: ResearchCatalog,
     results: tuple[ConnectorResult, ...],
     generated_at: datetime,
+    company_results: tuple[CompanyResult, ...] = (),
+    technical_error: str | None = None,
 ) -> tuple[tuple[CoverageItem, ...], dict[str, dict[str, int]]]:
     market_result, institutional_result, margin_result = results
     evaluated: list[tuple[CoverageEntry, ...]] = []
     for result in results:
-        health = _health(result, generated_at)
-        replacement_status = {
-            "stale": "stale",
-            "future": "unverified",
-            "unverified_time": "unverified",
-        }.get(health.status)
+        observations = {item.field_id: item for item in result.observations}
+        def evaluate(entry: CoverageEntry) -> CoverageEntry:
+            if entry.status != "available":
+                return entry
+            observation = observations.get(entry.field_id)
+            if not result.valid_time_verified or observation is None:
+                return replace(entry, status="unverified", reason="official_source_time_unverified")
+            valid_date = observation.valid_time.astimezone(ZoneInfo("Asia/Taipei")).date()
+            expected = expected_completed_session(generated_at)
+            if valid_date > expected:
+                return replace(entry, status="unverified", reason="future")
+            if valid_date < expected:
+                return replace(entry, status="stale", reason="stale")
+            return entry
         evaluated.append(
-            tuple(
-                CoverageEntry(
-                    entry.field_id,
-                    replacement_status if replacement_status and entry.status == "available" else entry.status,
-                    health.status if replacement_status and entry.status == "available" else entry.reason,
-                    entry.source_id,
-                    entry.observed_at,
-                )
-                for entry in result.coverage
-            )
+            tuple(evaluate(entry) for entry in result.coverage)
         )
     market_coverage, institutional_coverage, margin_coverage = evaluated
     supplied = [entry for entries in evaluated for entry in entries]
+    supplied.extend(entry for result in company_results for entry in result.coverage)
     supplied.extend(
         (
             _gate_entry("category.identity", market_result, market_coverage),
             _gate_entry("category.market", market_result, market_coverage),
             CoverageEntry(
                 "category.technical",
-                "computed",
-                "deterministic_daily_indicators",
+                "failed" if technical_error else "computed",
+                technical_error or "deterministic_daily_indicators",
                 "computed",
                 generated_at,
             ),
@@ -366,6 +388,50 @@ def _market_conflicts(
     return tuple(conflicts)
 
 
+def _failed_official(connector_id: str, when: datetime, reason: str, *, unresolved=False) -> ConnectorResult:
+    definition = OFFICIAL_CONNECTORS[connector_id]
+    source_id = "computed" if unresolved else definition.source_id
+    return ConnectorResult(
+        "unresolved_" + connector_id.split("_", 1)[1] if unresolved else connector_id,
+        source_id, "" if unresolved else definition.endpoint, when, (),
+        tuple(CoverageEntry(field, "failed", reason, source_id, when)
+              for field in sorted(definition.contract_fields)), error=reason,
+    )
+
+
+def _fetch_official(connector_id, registry, symbol, timeout):
+    when = datetime.now(timezone.utc)
+    if connector_id not in registry:
+        return _failed_official(connector_id, when, "connector_not_configured")
+    try:
+        return registry[connector_id].fetch_safe(symbol, timeout=timeout)
+    except (ConnectorError, ValueError, OSError) as exc:
+        return _failed_official(connector_id, when, str(exc))
+
+
+def _resolve_profiles(results: tuple[CompanyResult, ...], when: datetime) -> str | None:
+    """Require fresh, readable profiles from both markets and exactly one match.
+
+    A missing or failed competing snapshot cannot establish exclusivity. This is
+    current snapshot routing, not ISIN/transfer history or a historical lookup.
+    """
+    profiles = {r.market: r for r in results if r.connector_id.endswith("_profile")}
+    if set(profiles) != set(ACTIVE_CONNECTORS):
+        return None
+    candidates = []
+    today = when.astimezone(ZoneInfo("Asia/Taipei")).date()
+    for market, profile in profiles.items():
+        if profile.error or profile.source_date is None or not 0 <= (today - profile.source_date).days <= 3:
+            return None
+        if profile.fields.get("identity.legal_name"):
+            if not any(c.field_id == "identity.legal_name" and c.status == "available" for c in profile.coverage):
+                return None
+            candidates.append(market)
+        elif not all(c.reason == "no_matching_rows_in_snapshot" for c in profile.coverage):
+            return None
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def research_stock(
     symbol: str,
     *,
@@ -375,31 +441,64 @@ def research_stock(
     catalog: ResearchCatalog | None = None,
     generated_at: datetime | None = None,
     database_path: str | Path | None = None,
+    company_connectors: Mapping[str, Any] | None = None,
 ) -> ResearchReport:
     """Build the first usable single-stock report from live and computed data."""
 
-    if timeout <= 0:
+    if not math.isfinite(timeout) or timeout <= 0:
         raise ValueError("timeout 必須大於 0")
     when = generated_at or datetime.now(ZoneInfo("Asia/Taipei"))
     if when.tzinfo is None:
         raise ValueError("generated_at 必須包含時區")
 
+    candidates = symbol_candidates(symbol)  # Validate before any external request.
+    base_symbol = candidates[0].split(".", 1)[0]
     active_provider = provider if provider is not None else YahooFinanceProvider(timeout=timeout)
-    market_data = active_provider.fetch(symbol)
+    market_data, analysis, analysis_error = None, None, None
+    try:
+        fetched = active_provider.fetch(symbol)
+        if fetched.symbol.upper() not in candidates:
+            raise DataProviderError("研究入口股票身分不一致")
+        market_data = fetched
+        analysis = analyze_bars(market_data, as_of=when)
+    except (DataProviderError, ValueError, OSError) as exc:
+        analysis_error = str(exc) or type(exc).__name__
     yahoo_fetched_at = datetime.now(timezone.utc)
-    analysis = analyze_bars(market_data, as_of=when)
-    market = _market_for_symbol(market_data.symbol)
-    base_symbol = market_data.symbol.split(".", 1)[0]
     active_connectors = connectors if connectors is not None else OFFICIAL_CONNECTORS
-    connector_ids = ACTIVE_CONNECTORS[market]
-    selected = tuple(active_connectors[connector_id] for connector_id in connector_ids)
+    # Supplying test/replay connectors must not unexpectedly access live sources.
+    supplements = company_connectors if company_connectors is not None else (COMPANY_CONNECTORS if connectors is None else {})
+    company_results = None
+    routing_error = None
+    if len(candidates) == 1:
+        market, resolution = _market_for_symbol(candidates[0]), "requested_market"
+    elif market_data is not None:
+        market, resolution = _market_for_symbol(market_data.symbol), "provider_symbol"
+    else:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            pending = [executor.submit(fetch_company_sources, base_symbol, venue, timeout=timeout,
+                                       connectors=supplements, as_of=when) for venue in ACTIVE_CONNECTORS]
+            company_results = tuple(result for task in pending for result in task.result())
+        market = _resolve_profiles(company_results, when) or "UNRESOLVED"
+        resolution = "official_profiles" if market != "UNRESOLVED" else "unresolved"
+        if market == "UNRESOLVED":
+            routing_error = "市場未確認：官方主檔缺漏、失敗、過期或上市櫃匹配有歧義；可明確指定 .TW／.TWO，仍需查核身分"
 
-    with ThreadPoolExecutor(max_workers=len(selected)) as executor:
-        futures = [
-            executor.submit(connector.fetch_safe, base_symbol, timeout=timeout)
-            for connector in selected
-        ]
-        results = tuple(future.result() for future in futures)
+    if market in ACTIVE_CONNECTORS:
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            company_future = (executor.submit(fetch_company_sources, base_symbol, market, timeout=timeout,
+                                              connectors=supplements, as_of=when) if company_results is None else None)
+            pending = [executor.submit(_fetch_official, key, active_connectors, base_symbol, timeout)
+                       for key in ACTIVE_CONNECTORS[market]]
+            results = tuple(task.result() for task in pending)
+            if company_future is not None:
+                company_results = company_future.result()
+    else:
+        # Do not mix two markets' same field IDs or guess TWSE on an outage.
+        results = tuple(_failed_official(key, when, "not_requested_market_unresolved", unresolved=True)
+                        for key in ACTIVE_CONNECTORS["TWSE"])
+    company_results = company_results or ()
+    selected_company = tuple(r for r in company_results if r.market == market)
+    resolved_symbol = base_symbol + (".TW" if market == "TWSE" else ".TWO" if market == "TPEx" else "")
 
     observations = tuple(item for result in results for item in result.observations)
     official_name = next(
@@ -408,10 +507,12 @@ def research_stock(
             for item in observations
             if item.field_id == "identity.name" and str(item.value).strip()
         ),
-        analysis.name,
+        next((str(r.fields["identity.legal_name"]) for r in selected_company if "identity.legal_name" in r.fields),
+             analysis.name if analysis else base_symbol),
     )
-    official_health = tuple(_health(result, when) for result in results)
-    yahoo_status = analysis.freshness_status
+    official_health = tuple(_health(result, when) if market in ACTIVE_CONNECTORS else
+                            replace(_health(result, when), status="not_requested") for result in results)
+    yahoo_status = analysis.freshness_status if analysis else "failed"
     if yahoo_status == "current":
         yahoo_status = "ok"
     yahoo_health = SourceHealth(
@@ -420,20 +521,24 @@ def research_stock(
         endpoint="Yahoo Finance Chart API",
         status=yahoo_status,
         fetched_at=yahoo_fetched_at,
-        observations=len(market_data.bars),
+        observations=len(market_data.bars) if market_data else 0,
         valid_times=(
             datetime.combine(
                 analysis.data_date,
                 datetime.min.time(),
                 tzinfo=ZoneInfo("Asia/Taipei"),
             ),
-        ),
-        valid_time_verified=True,
+        ) if analysis else (),
+        error=analysis_error,
+        valid_time_verified=analysis is not None,
+        time_status=yahoo_status,
+        completeness_status="complete" if analysis else "unavailable",
     )
 
     active_catalog = catalog if catalog is not None else load_catalog()
-    coverage, by_category = _coverage_items(active_catalog, results, when)
-    conflicts = _market_conflicts(analysis, observations)
+    coverage, by_category = _coverage_items(active_catalog, results, when, selected_company,
+                                             technical_error=analysis_error if analysis is None else None)
+    conflicts = _market_conflicts(analysis, observations) if analysis else ()
     if conflicts:
         coverage = tuple(
             replace(
@@ -450,21 +555,32 @@ def research_stock(
             counts = by_category.setdefault(item.category, {})
             counts[item.status] = counts.get(item.status, 0) + 1
     warnings: list[str] = []
-    if analysis.freshness_warning:
+    warnings.append("官方重大訊息只查詢回傳快照；未查到不代表沒有事件，尚未涵蓋完整歷史或外部新聞。")
+    if any(source.market != market for source in company_results):
+        warnings.append("公司快照含跨市場路由候選；非已選市場的資料只保留查詢紀錄，不合併為該股證據。")
+    for source in company_results:
+        if source.error:
+            warnings.append(f"{source.connector_id} 失敗：{source.error}")
+        warnings.extend(f"{source.connector_id}: {issue}" for issue in source.issues)
+    if analysis_error:
+        warnings.append("技術分析不可用：" + analysis_error)
+    if routing_error:
+        warnings.append(routing_error)
+    if analysis and analysis.freshness_warning:
         warnings.append(analysis.freshness_warning)
     for source in official_health:
+        if source.missing_fields:
+            warnings.append(f"{source.connector_id} 不可用欄位：{', '.join(source.missing_fields)}")
         if source.status == "failed":
             warnings.append(f"{source.connector_id} 失敗：{source.error}")
-        elif source.status == "partial":
-            warnings.append(
-                f"{source.connector_id} 缺少欄位：{', '.join(source.missing_fields)}"
-            )
         elif source.status == "stale":
             warnings.append(
-                f"{source.connector_id} 最新資料為 {source.valid_times[-1].date().isoformat()}，可能已過期"
+                f"{source.connector_id} 含 {source.valid_times[0].date().isoformat()} 資料，可能已過期"
             )
         elif source.status == "unverified_time":
             warnings.append(f"{source.connector_id} 回應缺少可驗證資料日期")
+        elif source.status == "future":
+            warnings.append(f"{source.connector_id} 含晚於應完成交易日的資料")
     missing_p0_items = [
         item for item in coverage
         if item.field_id.startswith("category.")
@@ -480,8 +596,21 @@ def research_stock(
 
     warnings.extend(conflicts)
     blockers: list[str] = []
+    if analysis:
+        blockers.extend(f"技術初篩不合格：{reason}" for reason in analysis.screening_blockers)
+    else:
+        blockers.append("技術分析不可用：" + (analysis_error or "unknown_error"))
+    if routing_error:
+        blockers.append(routing_error)
     blockers.extend(f"P0 類別未就緒：{item.name}" for item in missing_p0_items)
-    if analysis.freshness_status != "current":
+    try:
+        assert_strict_p0_coverage(active_catalog, (
+            CoverageEntry(item.field_id, item.status, item.reason, item.source_id, item.observed_at)
+            for item in coverage
+        ))
+    except CoverageError as exc:
+        blockers.append(str(exc))
+    if analysis and analysis.freshness_status != "current":
         blockers.append(f"Yahoo 日線狀態為 {analysis.freshness_status}")
     blockers.extend(conflicts)
     for source in official_health:
@@ -496,7 +625,7 @@ def research_stock(
     report = ResearchReport(
         status=active_status,
         generated_at=when,
-        symbol=market_data.symbol,
+        symbol=resolved_symbol,
         name=official_name,
         market=market,
         analysis=analysis,
@@ -508,6 +637,10 @@ def research_stock(
         decision_blockers=tuple(dict.fromkeys(blockers)),
         market_conflicts=conflicts,
         warnings=tuple(warnings),
+        company_sources=company_results,
+        analysis_error=analysis_error,
+        market_resolution=resolution,
+        routing_error=routing_error,
     )
     if database_path is not None:
         run_id = persist_research_report(report, database_path)
@@ -551,7 +684,7 @@ def persist_research_report(report: ResearchReport, path: str | Path) -> str:
             report.market,
             report.name,
             report.generated_at,
-        )
+        ) if report.market in ACTIVE_CONNECTORS else None
         run_id = database.start_run(
             base_symbol,
             report.generated_at,
@@ -606,21 +739,16 @@ def persist_research_report(report: ResearchReport, path: str | Path) -> str:
                 )
                 observation_ids[(observation.field_id, observation.source_id)] = observation_id
 
-            yahoo_valid_time = datetime.combine(
-                report.analysis.data_date,
-                datetime.min.time(),
-                tzinfo=ZoneInfo("Asia/Taipei"),
-            )
-            yahoo_close_id = database.add_observation(
-                instrument_id=instrument_id,
-                field_id="market.close",
-                value=report.analysis.close,
-                unit="TWD/share",
-                valid_time=yahoo_valid_time,
-                known_at=yahoo_retrieved_at,
-                source_id="yahoo_finance",
-                source_record_key=report.symbol,
-            )
+            yahoo_close_id = None
+            if report.analysis is not None:
+                yahoo_valid_time = datetime.combine(
+                    report.analysis.data_date, datetime.min.time(), tzinfo=ZoneInfo("Asia/Taipei"),
+                )
+                yahoo_close_id = database.add_observation(
+                    instrument_id=instrument_id, field_id="market.close", value=report.analysis.close,
+                    unit="TWD/share", valid_time=yahoo_valid_time, known_at=yahoo_retrieved_at,
+                    source_id="yahoo_finance", source_record_key=report.symbol,
+                )
 
             coverage_rows = (
                 CoverageEntry(
@@ -657,22 +785,48 @@ def persist_research_report(report: ResearchReport, path: str | Path) -> str:
                         ),
                     )
                 )
-            evidence_ids.append(
-                database.add_evidence(
+            if report.analysis is not None and yahoo_close_id is not None:
+                evidence_ids.append(database.add_evidence(
                     run_id=run_id,
-                    statement=(
-                        f"Yahoo 日線 {report.analysis.data_date.isoformat()} 收盤 "
-                        f"{report.analysis.close:g}"
-                    ),
-                    claim_type="FACT",
-                    stance="neutral",
-                    source_id="yahoo_finance",
-                    retrieved_at=yahoo_retrieved_at,
-                    event_time=yahoo_valid_time,
+                    statement=f"Yahoo 日線 {report.analysis.data_date.isoformat()} 收盤 {report.analysis.close:g}",
+                    claim_type="FACT", stance="neutral", source_id="yahoo_finance",
+                    retrieved_at=yahoo_retrieved_at, event_time=yahoo_valid_time,
                     quality={**_EVIDENCE_QUALITY_OFFICIAL, "source_reliability": 0.7},
                     observation_ids=(yahoo_close_id,),
-                )
-            )
+                ))
+            for supplement in report.company_sources:
+                database.save_supplement(run_id, supplement.to_dict())
+                document_id = None
+                if supplement.content_hash:
+                    document_id = database.add_raw_document(
+                        source_id=supplement.source_id, url=supplement.endpoint,
+                        content_hash=supplement.content_hash, retrieved_at=supplement.fetched_at,
+                        title=supplement.connector_id, parser_version="company-1",
+                    )
+                statuses = {item.field_id: item.status for item in supplement.coverage}
+                if supplement.market != report.market:
+                    # Routing candidates are saved separately, not claimed as the resolved company's facts.
+                    continue
+                for field, value in supplement.fields.items():
+                    evidence_ids.append(database.add_evidence(
+                        run_id=run_id, statement=f"公司主檔 {field} = {value}（出表日 {supplement.source_date or '未知'}）",
+                        claim_type="FACT" if statuses.get(field) == "available" else "UNKNOWN",
+                        stance="neutral", source_id=supplement.source_id,
+                        retrieved_at=supplement.fetched_at, document_id=document_id,
+                        quality={**_EVIDENCE_QUALITY_OFFICIAL, "claim_support": 0.0,
+                                 "recency": 0.0, "independence": 0.0, "corroboration": 0.0},
+                        evidence_status="profile_metadata_unassessed",
+                    ))
+                for event in supplement.announcements:
+                    evidence_ids.append(database.add_evidence(
+                        run_id=run_id, statement=f"官方公告主旨（未核實內容）：{event.headline}｜記錄鍵 {event.source_record_key}",
+                        claim_type="UNKNOWN" if event.issues else "FACT", stance="neutral",
+                        source_id=supplement.source_id, retrieved_at=supplement.fetched_at,
+                        published_at=event.published_at, document_id=document_id,
+                        quality={**_EVIDENCE_QUALITY_OFFICIAL, "claim_support": 0.0,
+                                 "recency": 0.0, "independence": 0.0, "corroboration": 0.0},
+                        evidence_status="metadata_only_unassessed",
+                    ))
             database.add_conclusion(
                 run_id,
                 "decision_eligibility",
@@ -683,6 +837,12 @@ def persist_research_report(report: ResearchReport, path: str | Path) -> str:
                     "status": report.status,
                     "decision_blockers": list(report.decision_blockers),
                     "market_conflicts": list(report.market_conflicts),
+                    "analysis_snapshot": report.analysis.to_dict(decision_eligible=False) if report.analysis else None,
+                    "analysis_error": report.analysis_error,
+                    "market_resolution": report.market_resolution,
+                    "routing_error": report.routing_error,
+                    "source_health_snapshot": [item.to_dict() for item in report.source_health],
+                    "full_inputs_replayable": False,
                 },
             )
             database.finish_run(run_id, report.status)

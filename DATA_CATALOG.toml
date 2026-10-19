@@ -1,8 +1,141 @@
 [catalog]
-version = "0.1.0"
+version = "0.2.0"
 timezone = "Asia/Taipei"
 status_values = ["available", "computed", "missing", "stale", "failed", "restricted", "not_applicable", "conflicting", "unverified"]
 priority_values = ["P0", "P1", "P2"]
+
+[[fields]]
+id = "identity.legal_name"
+name = "公司法定名稱"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "text"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "identity.english_abbreviation"
+name = "公司英文簡稱（不是完整英文名稱）"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "text"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "identity.industry_code"
+name = "交易所產業代碼"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "code"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "identity.listing_date"
+name = "掛牌日期"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "date"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "identity.paid_in_capital"
+name = "實收資本額"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "TWD"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "identity.issue_shares_or_tdr_underlying"
+name = "已發行普通股數或TDR原股股數（依來源定義，不等同自由流通股）"
+category = "identity"
+priority = "P0"
+kind = "observation"
+unit = "shares"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "material_events.announcements"
+name = "回傳快照內官方重大訊息列表"
+category = "material_events"
+priority = "P0"
+kind = "collection"
+unit = "collection"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "material_events.headline"
+name = "各公告主旨"
+category = "material_events"
+priority = "P0"
+kind = "observation"
+unit = "text"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "material_events.published_at"
+name = "各公告發言日期與時間"
+category = "material_events"
+priority = "P0"
+kind = "observation"
+unit = "datetime"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "material_events.event_date"
+name = "各公告事實發生日（日期粒度）"
+category = "material_events"
+priority = "P0"
+kind = "observation"
+unit = "date"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "material_events.source_locator"
+name = "各公告來源端點與記錄定位鍵"
+category = "material_events"
+priority = "P0"
+kind = "observation"
+unit = "text"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
+[[fields]]
+id = "material_events.revision_hash"
+name = "各公告內容版本雜湊"
+category = "material_events"
+priority = "P0"
+kind = "observation"
+unit = "sha256"
+freshness = "按需快照；出表日超過3個曆日標記stale，非官方交易日曆判斷"
+implementation = "implemented"
+sources = ["twse_openapi", "tpex_openapi"]
+
 
 # category_gate 是 23 大資料族群的不可遺漏閘門。尚未展開的族群也必須在 coverage
 # 中出現，不能因為尚未實作就從報告消失。
@@ -190,7 +323,7 @@ priority = "P0"
 kind = "category_gate"
 unit = "status"
 freshness = "每次研究"
-implementation = "planned"
+implementation = "partial"
 sources = ["mops", "twse_openapi", "tpex_openapi"]
 
 [[fields]]

@@ -4,6 +4,8 @@
 
 | 需求 ID | 需求 | 實作 | 驗證 | 狀態 |
 |---|---|---|---|---|
+| REQ-SELECTION-001 | 選股 S01–S09 初篩安全 | analysis/models/providers/cli/research/official、SELECTION_POLICY | `tests/test_selection_safety.py` | 部分：原反例已防護；日曆／公司行動／官方身分仍有缺口 |
+| REQ-DEGRADED-001 | Yahoo／技術失敗保留其他資料、安全路由與缺技術報告落庫 | research/company/formatting | `tests/test_research_degradation.py` | 已完成此失敗隔離契約，不等於完整研究／歷史行情備援 |
 | REQ-DATA-001 | 23 大資料族群不可遺漏 | `DATA_CATALOG.toml`、`catalog.py`、`coverage.py` | 23 個 category gate 與完整 ID 集合測試 | 已完成第一版 |
 | REQ-DATA-002 | 行情、成交、法人、融資券欄位契約 | `DATA_CATALOG.toml`、`sources/official.py` | 六組 fixture contract 測試 | 已完成第一版 |
 | REQ-SOURCE-001 | 官方來源、端點與可用性可追蹤 | `SOURCE_CATALOG.toml`、`sources/official.py` | 6/6 曾通過 live schema；來源失敗逐欄揭露 | 部分完成：條款、限流與長期可用性待驗證 |
@@ -15,6 +17,8 @@
 | REQ-SAFETY-001 | 關鍵缺口、未完成日 K、過期與衝突阻擋交易計畫 | `analysis.py`、`research.py`、`formatting.py` | 盤中排除、P0 gate、同日價格衝突與輸出遮罩測試 | 已完成第一版 |
 | REQ-PERSIST-001 | 研究 run、觀察、coverage、證據與結論真正落庫 | `research.py`、`storage.py`、`cli.py` | SQLite 整合與外鍵關聯測試 | 已完成第一版 |
 | REQ-FUTURE-001 | 公式、回測、制度、安全、法律等深化 | `REQUIREMENTS.md` §14 | 後續逐項建立量化驗收 | 待辦 |
+| REQ-AUDIT-001 | A01–A09 數值、時間、身分、資料品質與輸出安全 | analysis/providers/official/research/storage/models/cli | `tests/test_audit_regressions.py` | 第 1 批已修復；不代表後續資料源已完成 |
+| REQ-COMPANY-001 | 公司主檔與公告 metadata、時間、版本及研究落庫 | `sources/company.py`、research/storage/cli | `tests/test_company_sources.py`、四端點實測 | 部分完成：12 個細項；不是完整公司／事件研究 |
 
 ## 「不可靜默漏項」如何成立
 
@@ -25,4 +29,5 @@
 5. 所有 P0 項目都必須已實作且狀態可用；planned/partial、missing、stale、failed、conflicting 或 unverified 都由嚴格閘門拒絕通過。
 6. SQLite `coverage(run_id, field_id)` 主鍵保證每次研究每個項目最多一筆狀態。
 
-目前全集包含 23 個族群閘門與第一批官方連接器的欄位級契約。後續展開財報、營收、新聞等族群時，必須先增加目錄 ID、矩陣映射與測試，再加入程式。
+目前全集包含 23 個族群閘門與 41 個細項（含本批公司／公告 12 項），不是使用者所有需求的細項全集。
+後續展開財報、營收、新聞等族群時，必須先增加目錄 ID、矩陣映射與測試，再加入程式。

@@ -1,0 +1,89 @@
+{
+  "baseline": "f0ba29b003dc9b28e119611032a34321c8be641e",
+  "cases": [
+    {
+      "case": "A01_adjusted_return",
+      "expected": "0% for constant raw and adjusted prices",
+      "actual": 25.0,
+      "defect_reproduced": true
+    },
+    {
+      "case": "A02_historical_cutoff",
+      "expected": "no bars later than 2026-10-02 used, or reject",
+      "actual": {
+        "data_date": "2026-10-16",
+        "status": "future",
+        "score": 23
+      },
+      "defect_reproduced": true
+    },
+    {
+      "case": "A03_nonfinite_official_number",
+      "expected": "reject or mark invalid/missing",
+      "actual": {
+        "value": "nan",
+        "status": "available"
+      },
+      "defect_reproduced": true
+    },
+    {
+      "case": "A04_stale_partial_masks_age",
+      "expected": "old close still marked stale despite another missing field",
+      "actual": {
+        "health": "partial",
+        "close_status": "available"
+      },
+      "defect_reproduced": true
+    },
+    {
+      "case": "A05_timezone_asof",
+      "expected": "one row: 10:00+08 is earlier than 03:00 UTC",
+      "actual": 0,
+      "defect_reproduced": true
+    },
+    {
+      "case": "A06_scan_partial_failure",
+      "expected": "partial/error status and nonzero exit when one requested stock fails",
+      "actual": {
+        "status": "ok",
+        "exit_code": 0,
+        "errors": {
+          "2317": "synthetic outage"
+        }
+      },
+      "defect_reproduced": true
+    },
+    {
+      "case": "A07_scan_gate",
+      "expected": "technical-only scan does not expose formal trade levels without decision gate",
+      "actual": {
+        "entry_low": 99.5,
+        "scope": null,
+        "decision_eligible": null
+      },
+      "defect_reproduced": true
+    },
+    {
+      "case": "A08_identity_mismatch",
+      "expected": "reject response symbol different from requested 2330.TW",
+      "actual": "2317.TW",
+      "defect_reproduced": true
+    },
+    {
+      "case": "A09_invalid_official_ohlc",
+      "expected": "reject high below low/open/close",
+      "actual": {
+        "market.open": "available",
+        "market.high": "available",
+        "market.low": "available",
+        "market.close": "available",
+        "market.change": "available",
+        "market.volume": "available",
+        "market.value": "available",
+        "market.transactions": "available"
+      },
+      "defect_reproduced": true
+    }
+  ],
+  "defects_reproduced": 9
+}

@@ -1,0 +1,205 @@
+{
+  "checked_at": "2026-10-17T10:38:00+08:00",
+  "validation_note": "六個官方連接器曾取得真實抽樣並通過欄位 schema；2026-10-17 重查 5/6 可連線，TWSE T86 被本雲端網路隧道拒絕。這不代表永久可用、授權完成或資料永遠新鮮。",
+  "sources": [
+    {
+      "id": "twse_openapi",
+      "name": "臺灣證券交易所官方資料服務",
+      "authority": "official",
+      "base_url": "https://openapi.twse.com.tw/v1",
+      "terms_url": "https://www.twse.com.tw/terms/",
+      "storage_policy": "只保存研究必要的結構化欄位、來源 URL、取得時間與雜湊；依官方條款複核。",
+      "authentication": "none",
+      "rate_limit": "官方未在本專案中驗證；採低頻按需請求與快取",
+      "history": "本批端點以近期/當日橫截面為主；歷史範圍需逐端點驗證",
+      "update_schedule": "交易日收盤後；實際發布時間需監測",
+      "priority": 1,
+      "fallback_sources": [],
+      "live_validation": "schema_validated_3_of_3_availability_variable",
+      "last_live_check": "2026-10-17: market_ok, margin_ok, institutional_environment_tunnel_403",
+      "endpoints": [
+        {
+          "id": "twse.market.daily_all",
+          "path": "/exchangeReport/STOCK_DAY_ALL",
+          "categories": [
+            "identity",
+            "market"
+          ],
+          "connector": "twse_market"
+        },
+        {
+          "id": "twse.institutional.daily",
+          "path": "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999",
+          "categories": [
+            "institutional"
+          ],
+          "connector": "twse_institutional"
+        },
+        {
+          "id": "twse.margin.daily",
+          "path": "/exchangeReport/MI_MARGN",
+          "categories": [
+            "margin"
+          ],
+          "connector": "twse_margin"
+        }
+      ]
+    },
+    {
+      "id": "tpex_openapi",
+      "name": "證券櫃檯買賣中心 OpenAPI",
+      "authority": "official",
+      "base_url": "https://www.tpex.org.tw/openapi/v1",
+      "terms_url": "https://www.tpex.org.tw/",
+      "storage_policy": "只保存研究必要的結構化欄位、來源 URL、取得時間與雜湊；依官方條款複核。",
+      "authentication": "none",
+      "rate_limit": "官方未在本專案中驗證；採低頻按需請求與快取",
+      "history": "本批端點以近期/當日橫截面為主；歷史範圍需逐端點驗證",
+      "update_schedule": "交易日收盤後；實際發布時間需監測",
+      "priority": 1,
+      "fallback_sources": [],
+      "live_validation": "schema_validated_3_of_3_availability_variable",
+      "last_live_check": "2026-10-17: 3_of_3_reachable_and_schema_complete",
+      "endpoints": [
+        {
+          "id": "tpex.market.daily_close",
+          "path": "/tpex_mainboard_daily_close_quotes",
+          "categories": [
+            "identity",
+            "market"
+          ],
+          "connector": "tpex_market"
+        },
+        {
+          "id": "tpex.institutional.daily",
+          "path": "/tpex_3insti_daily_trading",
+          "categories": [
+            "institutional"
+          ],
+          "connector": "tpex_institutional"
+        },
+        {
+          "id": "tpex.margin.daily",
+          "path": "/tpex_mainboard_margin_balance",
+          "categories": [
+            "margin"
+          ],
+          "connector": "tpex_margin"
+        }
+      ]
+    },
+    {
+      "id": "yahoo_finance",
+      "name": "Yahoo Finance Chart API",
+      "authority": "third_party",
+      "base_url": "https://query1.finance.yahoo.com/v8/finance/chart",
+      "terms_url": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+      "storage_policy": "保存研究所需的正規化數值與雜湊；正式大量使用前須再次確認授權、限流及再散布條款。",
+      "authentication": "none_observed",
+      "rate_limit": "未公開保證；低頻按需請求",
+      "history": "目前請求六個月日線；可用範圍與調整方式須持續驗證",
+      "update_schedule": "第三方未保證；研究執行時按需取得",
+      "priority": 2,
+      "fallback_sources": [
+        "twse_openapi",
+        "tpex_openapi"
+      ],
+      "live_validation": "prototype_unofficial_not_authoritative"
+    },
+    {
+      "id": "mops",
+      "name": "公開資訊觀測站",
+      "authority": "official",
+      "base_url": "https://mops.twse.com.tw",
+      "terms_url": "https://mops.twse.com.tw",
+      "storage_policy": "待逐資料集法律與技術驗證",
+      "authentication": "varies",
+      "rate_limit": "待驗證",
+      "history": "待驗證",
+      "update_schedule": "事件驅動",
+      "priority": 1,
+      "fallback_sources": [],
+      "live_validation": "planned"
+    },
+    {
+      "id": "computed",
+      "name": "Python 可重現計算",
+      "authority": "internal",
+      "base_url": "",
+      "terms_url": "",
+      "storage_policy": "保存公式版本、輸入證據 ID、輸出與程式版本",
+      "authentication": "none",
+      "rate_limit": "not_applicable",
+      "history": "依輸入資料",
+      "update_schedule": "研究執行時",
+      "priority": 1,
+      "fallback_sources": [],
+      "live_validation": "available"
+    }
+  ],
+  "live": {
+    "twse_market": {
+      "status": "ok",
+      "observations": 10,
+      "missing": [],
+      "fetched_at": "2026-10-17T07:16:45.104557+00:00",
+      "content_hash": "a3a86b0d331c10560b9c9904094f494f45ad7f508a9e1864bcf555bda4e273bb",
+      "valid_time_verified": true
+    },
+    "tpex_market": {
+      "status": "failed",
+      "error": "tpex_market 回傳非合法 JSON",
+      "field_statuses": {
+        "identity.name": "failed",
+        "identity.symbol": "failed",
+        "market.change": "failed",
+        "market.close": "failed",
+        "market.high": "failed",
+        "market.low": "failed",
+        "market.open": "failed",
+        "market.transactions": "failed",
+        "market.value": "failed",
+        "market.volume": "failed"
+      }
+    },
+    "twse_institutional": {
+      "status": "failed",
+      "error": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+      "field_statuses": {
+        "institutional.dealer.buy": "failed",
+        "institutional.dealer.net": "failed",
+        "institutional.dealer.sell": "failed",
+        "institutional.foreign.buy": "failed",
+        "institutional.foreign.net": "failed",
+        "institutional.foreign.sell": "failed",
+        "institutional.trust.buy": "failed",
+        "institutional.trust.net": "failed",
+        "institutional.trust.sell": "failed"
+      }
+    },
+    "tpex_institutional": {
+      "status": "ok",
+      "observations": 9,
+      "missing": [],
+      "fetched_at": "2026-10-17T07:16:52.485323+00:00",
+      "content_hash": "318e140c61fafaf0806604d7cd5ee96c26df3acb1b234c9fc64745dd512c7aa0",
+      "valid_time_verified": true
+    },
+    "twse_margin": {
+      "status": "partial",
+      "observations": 10,
+      "missing": [],
+      "fetched_at": "2026-10-17T07:16:59.455492+00:00",
+      "content_hash": "11978fea059fd100920d892b1b1342de4a16eaff3f2223ab6dde16d1e4355e95",
+      "valid_time_verified": false
+    },
+    "tpex_margin": {
+      "status": "ok",
+      "observations": 10,
+      "missing": [],
+      "fetched_at": "2026-10-17T07:17:00.638888+00:00",
+      "content_hash": "716f2260ce935bf1a938ad49f4c8ba8d3825e9a079132d78ebf713a592831005",
+      "valid_time_verified": true
+    }
+  }
+}

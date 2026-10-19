@@ -49,6 +49,8 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(endpoint_ids, {
             "twse.market.daily_all", "twse.institutional.daily", "twse.margin.daily",
             "tpex.market.daily_close", "tpex.institutional.daily", "tpex.margin.daily",
+            "twse.company.profile", "twse.company.announcements",
+            "tpex.company.profile", "tpex.company.announcements",
         })
 
     def test_implemented_catalog_sources_exist_in_source_catalog(self) -> None:

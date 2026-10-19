@@ -1,0 +1,15 @@
+{
+  "command": "PYTHONPATH=src python -m tw_stock_swing sources --live --timeout 10",
+  "exit_code": 2,
+  "record_type": "summary_transcribed_from_command_output",
+  "time_window_utc": "2026-10-17T07:03:39Z/2026-10-17T07:03:48Z",
+  "results": {
+    "twse_market": {"status": "ok", "observations": 10, "valid_time_verified": true, "content_hash": "a3a86b0d331c10560b9c9904094f494f45ad7f508a9e1864bcf555bda4e273bb"},
+    "tpex_market": {"status": "failed", "error": "tpex_market 回傳非合法 JSON"},
+    "twse_institutional": {"status": "failed", "error": "Tunnel connection failed: 403 Forbidden", "environment_allowlist_contains_host": false},
+    "tpex_institutional": {"status": "ok", "observations": 9, "valid_time_verified": true, "content_hash": "318e140c61fafaf0806604d7cd5ee96c26df3acb1b234c9fc64745dd512c7aa0"},
+    "twse_margin": {"status": "partial", "observations": 10, "missing": [], "valid_time_verified": false, "content_hash": "11978fea059fd100920d892b1b1342de4a16eaff3f2223ab6dde16d1e4355e95"},
+    "tpex_margin": {"status": "ok", "observations": 10, "valid_time_verified": true, "content_hash": "716f2260ce935bf1a938ad49f4c8ba8d3825e9a079132d78ebf713a592831005"}
+  },
+  "note": "ok 僅代表這次抽樣解析和日期格式通過，並非交易日新鮮度、授權、長期穩定性或全市場驗證。"
+}

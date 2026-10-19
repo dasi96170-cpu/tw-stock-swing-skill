@@ -1,0 +1,111 @@
+{
+  "scope": "synthetic_offline_not_live_stock_claims",
+  "findings": [
+    {
+      "case": "S01_no_liquidity_or_zero_trade_gate",
+      "actual": {
+        "liquid_score": 82,
+        "one_share_score": 82,
+        "zero_volume_score": 77,
+        "zero_volume_verdict": "不納入",
+        "zero_volume_freshness": "current"
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S02_down_day_volume_unconditionally_rewarded",
+      "actual": {
+        "close_change_pct": -1,
+        "ordinary_score": 65,
+        "heavy_score": 65,
+        "heavy_verdict": "觀察",
+        "reasons": [
+          "收盤價站上 20 日均線",
+          "5、10、20 日均線呈多頭排列",
+          "20 日均線高於 60 日均線，中期趨勢偏多",
+          "價格接近前 20 日高點",
+          "20 筆觀察間隔報酬為 9.5%（交易日曆未驗證）"
+        ]
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S03_missing_whole_sessions_not_detected",
+      "actual": {
+        "full_20_observation_return": 7.17,
+        "sparse_claimed_20_day_return": 15.44,
+        "sparse_window_weekday_sessions": 40,
+        "freshness": "current",
+        "parser_quality_issues": []
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S04_all_adjusted_prices_missing_silently_falls_back",
+      "actual": {
+        "rejected": "還原價格全部缺漏，無法確認公司行動調整基準"
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S05_split_share_volume_creates_false_spike",
+      "actual": {
+        "notional_before": 100000,
+        "notional_after": 100000,
+        "volume_ratio": 2.0,
+        "reasons": [
+          "價格接近前 20 日高點",
+          "RSI14 為 50.0，動能偏多且未明顯過熱"
+        ]
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S06_same_security_alias_occupies_multiple_ranks",
+      "actual": {
+        "exit": 0,
+        "symbols": [
+          "2330.TW"
+        ],
+        "eligible": 1
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S07_yahoo_failure_prevents_official_research",
+      "actual": {
+        "company_fetch_calls": 1,
+        "report_returned": true,
+        "status": "insufficient",
+        "analysis_is_none": true
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S08_currency_and_instrument_type_not_checked",
+      "actual": {
+        "rejected": "幣別／證券類型未通過：目前僅接受明確標示 TWD／EQUITY 的台股日線"
+      },
+      "weakness_reproduced": false
+    },
+    {
+      "case": "S09_volume_value_trades_contradiction_accepted",
+      "actual": {
+        "coverage": {
+          "identity.symbol": "available",
+          "identity.name": "available",
+          "market.open": "available",
+          "market.high": "available",
+          "market.low": "available",
+          "market.close": "available",
+          "market.change": "available",
+          "market.volume": "conflicting",
+          "market.value": "conflicting",
+          "market.transactions": "conflicting"
+        }
+      },
+      "weakness_reproduced": false
+    }
+  ],
+  "weaknesses_reproduced": 0
+}

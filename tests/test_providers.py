@@ -47,7 +47,7 @@ class ProviderTests(unittest.TestCase):
                 "error": None,
                 "result": [
                     {
-                        "meta": {"symbol": "2330.TW", "longName": "台積電"},
+                        "meta": {"symbol": "2330.TW", "longName": "台積電", "currency": "TWD", "instrumentType": "EQUITY"},
                         "timestamp": timestamps,
                         "indicators": {
                             "quote": [

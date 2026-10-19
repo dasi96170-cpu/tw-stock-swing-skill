@@ -1,0 +1,116 @@
+{
+  "status": "partial",
+  "scope": "latest_official_snapshot_only",
+  "decision_eligible": false,
+  "sources": [
+    {
+      "connector_id": "tpex_profile",
+      "source_id": "tpex_openapi",
+      "endpoint": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+      "symbol": "6488",
+      "market": "TPEx",
+      "fetched_at": "2026-10-18T10:03:03.688331+00:00",
+      "source_date": "2026-10-18",
+      "fields": {
+        "identity.legal_name": "環球晶圓股份有限公司",
+        "identity.english_abbreviation": "GWC",
+        "identity.industry_code": "24",
+        "identity.listing_date": "2015-09-25",
+        "identity.paid_in_capital": 5281137250,
+        "identity.issue_shares_or_tdr_underlying": 528113725
+      },
+      "announcements": [],
+      "coverage": [
+        {
+          "field_id": "identity.english_abbreviation",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.industry_code",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.issue_shares_or_tdr_underlying",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.legal_name",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.listing_date",
+          "status": "available",
+          "reason": "profile_snapshot"
+        },
+        {
+          "field_id": "identity.paid_in_capital",
+          "status": "available",
+          "reason": "profile_snapshot"
+        }
+      ],
+      "issues": [],
+      "content_hash": "719cc924dee8f9a2f50d5f231e31cf3b2ed418f65705073ed42ad7e83dcea381",
+      "error": null,
+      "scope": "latest_official_snapshot_only",
+      "absence_proven": false,
+      "body_stored": false,
+      "parser_version": "company-1"
+    },
+    {
+      "connector_id": "tpex_announcements",
+      "source_id": "tpex_openapi",
+      "endpoint": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap04_O",
+      "symbol": "6488",
+      "market": "TPEx",
+      "fetched_at": "2026-10-18T10:03:03.689146+00:00",
+      "source_date": "2026-10-18",
+      "fields": {},
+      "announcements": [],
+      "coverage": [
+        {
+          "field_id": "material_events.announcements",
+          "status": "available",
+          "reason": "returned_snapshot_only"
+        },
+        {
+          "field_id": "material_events.event_date",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.headline",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.published_at",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.revision_hash",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        },
+        {
+          "field_id": "material_events.source_locator",
+          "status": "missing",
+          "reason": "no_matching_rows_in_snapshot"
+        }
+      ],
+      "issues": [
+        "no_matching_rows_in_returned_snapshot_not_proof_of_absence"
+      ],
+      "content_hash": "2dc0299117bcd2a9ff57c6f75ce9d3636da4ebfef01706e11cc0f2b2a00b9c72",
+      "error": null,
+      "scope": "latest_official_snapshot_only",
+      "absence_proven": false,
+      "body_stored": false,
+      "parser_version": "company-1"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import argparse
 import json
 import sqlite3
 import sys
+from dataclasses import replace
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Sequence
@@ -15,6 +16,7 @@ from .models import AnalysisResult
 from .providers import DataProviderError, YahooFinanceProvider
 from .research import research_stock
 from .sources import ConnectorError, OFFICIAL_CONNECTORS
+from .sources.company import fetch_company_sources
 from .storage import ResearchDatabase, SCHEMA_VERSION
 
 
@@ -69,8 +71,11 @@ def _run_analyze(args: argparse.Namespace) -> int:
         print(
             json.dumps(
                 {
-                    "status": "ok" if result.freshness_status == "current" else "stale",
+                    "status": ("insufficient" if not result.screening_eligible else
+                               "ok" if result.freshness_status == "current" else "stale"),
                     "scope": "technical_screen_only",
+                    "decision_eligible": False,
+                    "decision_blockers": ["technical_screen_only", *result.screening_blockers],
                     "analysis": analysis_payload,
                 },
                 ensure_ascii=False,
@@ -79,7 +84,7 @@ def _run_analyze(args: argparse.Namespace) -> int:
         )
     else:
         print(format_analysis(result))
-    return 0 if result.freshness_status == "current" else 3
+    return 4 if not result.screening_eligible else 0 if result.freshness_status == "current" else 3
 
 
 def _run_research(args: argparse.Namespace) -> int:
@@ -121,25 +126,51 @@ def _run_scan(args: argparse.Namespace) -> int:
 
     provider = YahooFinanceProvider(timeout=args.timeout)
     results: list[AnalysisResult] = []
+    completed: dict[str, AnalysisResult] = {}
     errors: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=min(args.workers, len(symbols))) as executor:
         futures = {executor.submit(_analyze_one, provider, symbol): symbol for symbol in symbols}
         for future in as_completed(futures):
             symbol = futures[future]
             try:
-                results.append(future.result())
+                completed[symbol] = future.result()
             except (ValueError, DataProviderError) as exc:
                 errors[symbol] = str(exc)
+    duplicates: list[dict[str, str]] = []
+    by_security: dict[str, AnalysisResult] = {}
+    for requested in symbols:  # Input order, independent of completion order.
+        if requested not in completed:
+            continue
+        result = completed[requested]
+        canonical = result.symbol.upper()
+        if canonical in by_security:
+            duplicates.append({"requested": requested, "resolved": canonical})
+            # Conflicting duplicate snapshots cannot be silently picked by arrival order.
+            if result != by_security[canonical]:
+                errors[requested] = "同一證券別名回應不一致，該證券不納入排名"
+                by_security[canonical] = replace(by_security[canonical], screening_eligible=False,
+                    verdict="不納入", screening_blockers=(*by_security[canonical].screening_blockers, "conflicting_alias_results"))
+        else:
+            by_security[canonical] = result
+    results = list(by_security.values())
     stale_results = [result for result in results if result.freshness_status != "current"]
-    eligible_results = [result for result in results if result.freshness_status == "current"]
-    eligible_results.sort(key=lambda result: (result.score, result.volume_ratio), reverse=True)
+    excluded_screening = [result for result in results if not result.screening_eligible]
+    eligible_results = [result for result in results if result.freshness_status == "current" and result.screening_eligible]
+    eligible_results.sort(key=lambda result: (-result.score, result.symbol))
+    scan_status = ("ok" if eligible_results and not stale_results and not errors and not excluded_screening
+                   else "partial" if results else "error")
     selected = eligible_results[: args.limit]
 
     if args.json:
         payload = {
-            "status": "ok" if eligible_results and not stale_results else "partial" if results else "error",
+            "status": scan_status,
+            "scope": "technical_screen_only",
+            "decision_eligible": False,
+            "decision_blockers": ["technical_screen_only"],
             "requested": len(symbols),
-            "succeeded": len(results),
+            "succeeded": len(completed),
+            "unique_succeeded": len(results),
+            "duplicates": duplicates,
             "eligible": len(eligible_results),
             "results": [result.to_dict() for result in selected],
             "excluded_stale": [
@@ -151,11 +182,13 @@ def _run_scan(args: argparse.Namespace) -> int:
                 for result in stale_results
             ],
             "errors": errors,
+            "excluded_screening": [{"symbol": r.symbol, "blockers": list(r.screening_blockers)}
+                                   for r in excluded_screening],
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         if selected:
-            print(f"完成 {len(results)}/{len(symbols)} 檔；顯示前 {len(selected)} 檔")
+            print(f"僅技術篩選，未通過完整研究決策閘門；完成 {len(completed)}/{len(symbols)} 個輸入、{len(results)} 檔唯一股票；顯示前 {len(selected)} 檔")
             for index, result in enumerate(selected, start=1):
                 warning = f"｜⚠ {result.freshness_warning}" if result.freshness_warning else ""
                 print(
@@ -168,7 +201,11 @@ def _run_scan(args: argparse.Namespace) -> int:
                 print(f"- {symbol}: {message}", file=sys.stderr)
         if stale_results:
             print(f"另有 {len(stale_results)} 檔因日線過期或時間異常未納入排序。", file=sys.stderr)
-    return 0 if eligible_results and not stale_results else 3 if results else 2
+        for result in excluded_screening:
+            print(f"- 不納入 {result.symbol}: {', '.join(result.screening_blockers)}", file=sys.stderr)
+        if duplicates:
+            print(f"已合併 {len(duplicates)} 個重複證券別名。", file=sys.stderr)
+    return {"ok": 0, "partial": 3, "error": 2}[scan_status]
 
 
 def _run_catalog(args: argparse.Namespace) -> int:
@@ -194,6 +231,21 @@ def _run_catalog(args: argparse.Namespace) -> int:
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
+
+
+def _run_company(args: argparse.Namespace) -> int:
+    try:
+        results = fetch_company_sources(args.symbol, args.market, timeout=args.timeout)
+        failed = any(result.error for result in results)
+        partial = any(item.status != 'available' for result in results for item in result.coverage)
+        payload = {'status': 'error' if failed else 'partial' if partial else 'ok',
+                   'scope': 'latest_official_snapshot_only', 'decision_eligible': False,
+                   'sources': [result.to_dict() for result in results]}
+        print(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False))
+        return 2 if failed else 3 if partial else 0
+    except (ValueError, ConnectorError) as exc:
+        print(json.dumps(_error_payload(str(exc)), ensure_ascii=False))
+        return 2
 
 
 def _run_sources(args: argparse.Namespace) -> int:
@@ -289,6 +341,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     catalog_parser = subparsers.add_parser("catalog", help="輸出機器可讀研究資料目錄")
     catalog_parser.set_defaults(handler=_run_catalog)
+
+    company_parser = subparsers.add_parser('company', help='取得公司主檔與官方公告快照（JSON；非完整新聞研究）')
+    company_parser.add_argument('symbol', help='數字公司代號，不含 .TW/.TWO')
+    company_parser.add_argument('--market', choices=('TWSE', 'TPEx'), required=True)
+    company_parser.add_argument('--timeout', type=float, default=20.0)
+    company_parser.set_defaults(handler=_run_company)
 
     sources_parser = subparsers.add_parser("sources", help="列出官方資料來源與驗證狀態")
     sources_parser.add_argument("--live", action="store_true", help="實際請求六個官方端點")

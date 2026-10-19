@@ -1,0 +1,1146 @@
+{
+  "status": "insufficient",
+  "research": {
+    "status": "insufficient",
+    "decision_eligible": false,
+    "decision_blockers": [
+      "P0 類別未就緒：股票與公司身分",
+      "P0 類別未就緒：價格與成交資料",
+      "P0 類別未就緒：成交量、量價與市場微結構",
+      "P0 類別未就緒：技術面與價格統計",
+      "P0 類別未就緒：三大法人",
+      "P0 類別未就緒：融資、融券、借券與當沖",
+      "P0 類別未就緒：月營收",
+      "P0 類別未就緒：損益表",
+      "P0 類別未就緒：資產負債表",
+      "P0 類別未就緒：現金流量表",
+      "P0 類別未就緒：財務品質與安全性",
+      "P0 類別未就緒：估值與市場預期",
+      "P0 類別未就緒：公司行動",
+      "P0 類別未就緒：重大訊息與法規風險",
+      "P0 類別未就緒：新聞與非結構化資料",
+      "P0 類別未就緒：大盤、國際、衍生品與被動資金",
+      "P0 資料不完整: category.identity, category.market, category.volume_structure, category.technical, category.institutional, category.margin, category.revenue, category.income_statement, category.balance_sheet, category.cash_flow, category.financial_quality, category.valuation, category.corporate_actions, category.material_events, category.news, category.macro_derivatives, institutional.foreign.buy, institutional.foreign.sell, institutional.foreign.net, institutional.trust.buy, institutional.trust.sell, institutional.trust.net, institutional.dealer.buy, institutional.dealer.sell, institutional.dealer.net, margin.financing.previous_balance, margin.financing.buy, margin.financing.sell, margin.financing.cash_redemption, margin.financing.balance, margin.short.previous_balance, margin.short.sell, margin.short.buy, margin.short.stock_redemption, margin.short.balance",
+      "twse_institutional 狀態為 failed",
+      "twse_margin 狀態為 unverified_time"
+    ],
+    "scope": "market_technical_institutional_margin",
+    "generated_at": "2026-10-17T15:16:46.524018+08:00",
+    "symbol": "2330.TW",
+    "name": "台積電",
+    "market": "TWSE",
+    "analysis": {
+      "symbol": "2330.TW",
+      "name": "Taiwan Semiconductor Manufacturing Company Limited",
+      "data_date": "2026-10-16",
+      "source": "Yahoo Finance Chart API（日線，非交易所即時報價）",
+      "score": 39,
+      "verdict": "避開",
+      "close": 2420.0,
+      "change_20d_pct": 1.77,
+      "volume_ratio": 1.52,
+      "sma5": 2476.0,
+      "sma10": 2517.5,
+      "sma20": 2491.0,
+      "sma60": 2416.5,
+      "rsi14": 41.68,
+      "macd": 14.142,
+      "macd_signal": 27.833,
+      "atr14": 40.38,
+      "entry_low": null,
+      "entry_high": null,
+      "stop_loss": null,
+      "target_1": null,
+      "target_2": null,
+      "risk_reward_1": null,
+      "excluded_incomplete_bar": false,
+      "freshness_status": "current",
+      "reasons": [
+        "20 日均線高於 60 日均線，中期趨勢偏多",
+        "成交量為 20 日均量的 1.52 倍",
+        "20 個交易日漲幅為 1.8%"
+      ],
+      "risks": [
+        "收盤價仍在 20 日均線下方",
+        "MACD 尚未形成正向動能",
+        "模型未納入重大消息、財報與處置／注意股票資訊"
+      ],
+      "freshness_warning": null
+    },
+    "official": {
+      "identity": {
+        "identity.symbol": {
+          "value": "2330",
+          "unit": "text",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "identity.name": {
+          "value": "台積電",
+          "unit": "text",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        }
+      },
+      "market": {
+        "market.open": {
+          "value": 2430,
+          "unit": "TWD/share",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.high": {
+          "value": 2445,
+          "unit": "TWD/share",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.low": {
+          "value": 2420,
+          "unit": "TWD/share",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.close": {
+          "value": 2420,
+          "unit": "TWD/share",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.change": {
+          "value": -20,
+          "unit": "TWD/share",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.volume": {
+          "value": 43046982,
+          "unit": "shares",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.value": {
+          "value": 104583063462,
+          "unit": "TWD",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "market.transactions": {
+          "value": 400499,
+          "unit": "trades",
+          "valid_time": "2026-10-16T00:00:00+08:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        }
+      },
+      "margin": {
+        "margin.financing.previous_balance": {
+          "value": 34223,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.financing.buy": {
+          "value": 1157,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.financing.sell": {
+          "value": 1160,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.financing.cash_redemption": {
+          "value": 110,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.financing.balance": {
+          "value": 34110,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.short.previous_balance": {
+          "value": 8,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.short.sell": {
+          "value": 4,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.short.buy": {
+          "value": 3,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.short.stock_redemption": {
+          "value": 0,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        },
+        "margin.short.balance": {
+          "value": 9,
+          "unit": "trading_units",
+          "valid_time": "2026-10-17T07:16:47.216360+00:00",
+          "source_id": "twse_openapi",
+          "source_record_key": "2330"
+        }
+      }
+    },
+    "official_findings": [
+      "融資餘額較前日減少 113 張",
+      "融券餘額較前日增加 1 張"
+    ],
+    "sources": [
+      {
+        "connector_id": "yahoo_daily",
+        "source_id": "yahoo_finance",
+        "endpoint": "Yahoo Finance Chart API",
+        "status": "ok",
+        "fetched_at": "2026-10-17T07:16:47.214810+00:00",
+        "observations": 126,
+        "missing_fields": [],
+        "valid_times": [
+          "2026-10-16T00:00:00+08:00"
+        ],
+        "error": null,
+        "content_hash": null,
+        "valid_time_verified": true,
+        "time_status": "ok",
+        "completeness_status": "complete"
+      },
+      {
+        "connector_id": "twse_market",
+        "source_id": "twse_openapi",
+        "endpoint": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+        "status": "ok",
+        "fetched_at": "2026-10-17T07:16:47.215598+00:00",
+        "observations": 10,
+        "missing_fields": [],
+        "valid_times": [
+          "2026-10-16T00:00:00+08:00"
+        ],
+        "error": null,
+        "content_hash": "a3a86b0d331c10560b9c9904094f494f45ad7f508a9e1864bcf555bda4e273bb",
+        "valid_time_verified": true,
+        "time_status": "ok",
+        "completeness_status": "complete"
+      },
+      {
+        "connector_id": "twse_institutional",
+        "source_id": "twse_openapi",
+        "endpoint": "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999",
+        "status": "failed",
+        "fetched_at": "2026-10-17T07:16:47.216002+00:00",
+        "observations": 0,
+        "missing_fields": [
+          "institutional.dealer.buy",
+          "institutional.dealer.net",
+          "institutional.dealer.sell",
+          "institutional.foreign.buy",
+          "institutional.foreign.net",
+          "institutional.foreign.sell",
+          "institutional.trust.buy",
+          "institutional.trust.net",
+          "institutional.trust.sell"
+        ],
+        "valid_times": [],
+        "error": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+        "content_hash": null,
+        "valid_time_verified": false,
+        "time_status": "unverified_time",
+        "completeness_status": "partial"
+      },
+      {
+        "connector_id": "twse_margin",
+        "source_id": "twse_openapi",
+        "endpoint": "https://openapi.twse.com.tw/v1/exchangeReport/MI_MARGN",
+        "status": "unverified_time",
+        "fetched_at": "2026-10-17T07:16:47.216360+00:00",
+        "observations": 10,
+        "missing_fields": [],
+        "valid_times": [
+          "2026-10-17T07:16:47.216360+00:00"
+        ],
+        "error": null,
+        "content_hash": "11978fea059fd100920d892b1b1342de4a16eaff3f2223ab6dde16d1e4355e95",
+        "valid_time_verified": false,
+        "time_status": "unverified_time",
+        "completeness_status": "complete"
+      }
+    ],
+    "coverage": {
+      "summary": {
+        "available": 12,
+        "missing": 18,
+        "computed": 1,
+        "failed": 10,
+        "unverified": 11
+      },
+      "by_category": {
+        "identity": {
+          "available": 3
+        },
+        "market": {
+          "available": 9
+        },
+        "volume_structure": {
+          "missing": 1
+        },
+        "technical": {
+          "computed": 1
+        },
+        "institutional": {
+          "failed": 10
+        },
+        "margin": {
+          "unverified": 11
+        },
+        "ownership": {
+          "missing": 1
+        },
+        "revenue": {
+          "missing": 1
+        },
+        "income_statement": {
+          "missing": 1
+        },
+        "balance_sheet": {
+          "missing": 1
+        },
+        "cash_flow": {
+          "missing": 1
+        },
+        "financial_quality": {
+          "missing": 1
+        },
+        "valuation": {
+          "missing": 1
+        },
+        "operations": {
+          "missing": 1
+        },
+        "corporate_actions": {
+          "missing": 1
+        },
+        "governance": {
+          "missing": 1
+        },
+        "material_events": {
+          "missing": 1
+        },
+        "news": {
+          "missing": 1
+        },
+        "supply_chain": {
+          "missing": 1
+        },
+        "industry_specific": {
+          "missing": 1
+        },
+        "peers": {
+          "missing": 1
+        },
+        "macro_derivatives": {
+          "missing": 1
+        },
+        "alternative": {
+          "missing": 1
+        }
+      },
+      "missing_p0_categories": [
+        {
+          "field_id": "category.identity",
+          "name": "股票與公司身分",
+          "category": "identity",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "available",
+          "reason": "implemented_subset_available",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "category.market",
+          "name": "價格與成交資料",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "available",
+          "reason": "implemented_subset_available",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "category.volume_structure",
+          "name": "成交量、量價與市場微結構",
+          "category": "volume_structure",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.technical",
+          "name": "技術面與價格統計",
+          "category": "technical",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "computed",
+          "reason": "deterministic_daily_indicators",
+          "source_id": "computed",
+          "observed_at": "2026-10-17T15:16:46.524018+08:00"
+        },
+        {
+          "field_id": "category.institutional",
+          "name": "三大法人",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "category.margin",
+          "name": "融資、融券、借券與當沖",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "category.revenue",
+          "name": "月營收",
+          "category": "revenue",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.income_statement",
+          "name": "損益表",
+          "category": "income_statement",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.balance_sheet",
+          "name": "資產負債表",
+          "category": "balance_sheet",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.cash_flow",
+          "name": "現金流量表",
+          "category": "cash_flow",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.financial_quality",
+          "name": "財務品質與安全性",
+          "category": "financial_quality",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.valuation",
+          "name": "估值與市場預期",
+          "category": "valuation",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.corporate_actions",
+          "name": "公司行動",
+          "category": "corporate_actions",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.material_events",
+          "name": "重大訊息與法規風險",
+          "category": "material_events",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.news",
+          "name": "新聞與非結構化資料",
+          "category": "news",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.macro_derivatives",
+          "name": "大盤、國際、衍生品與被動資金",
+          "category": "macro_derivatives",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        }
+      ],
+      "items": [
+        {
+          "field_id": "category.identity",
+          "name": "股票與公司身分",
+          "category": "identity",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "available",
+          "reason": "implemented_subset_available",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "category.market",
+          "name": "價格與成交資料",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "available",
+          "reason": "implemented_subset_available",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "category.volume_structure",
+          "name": "成交量、量價與市場微結構",
+          "category": "volume_structure",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.technical",
+          "name": "技術面與價格統計",
+          "category": "technical",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "computed",
+          "reason": "deterministic_daily_indicators",
+          "source_id": "computed",
+          "observed_at": "2026-10-17T15:16:46.524018+08:00"
+        },
+        {
+          "field_id": "category.institutional",
+          "name": "三大法人",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "category.margin",
+          "name": "融資、融券、借券與當沖",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "partial",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "category.ownership",
+          "name": "股權結構與大戶",
+          "category": "ownership",
+          "priority": "P1",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.revenue",
+          "name": "月營收",
+          "category": "revenue",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.income_statement",
+          "name": "損益表",
+          "category": "income_statement",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.balance_sheet",
+          "name": "資產負債表",
+          "category": "balance_sheet",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.cash_flow",
+          "name": "現金流量表",
+          "category": "cash_flow",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.financial_quality",
+          "name": "財務品質與安全性",
+          "category": "financial_quality",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.valuation",
+          "name": "估值與市場預期",
+          "category": "valuation",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.operations",
+          "name": "公司營運與產品",
+          "category": "operations",
+          "priority": "P1",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.corporate_actions",
+          "name": "公司行動",
+          "category": "corporate_actions",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.governance",
+          "name": "公司治理與管理層",
+          "category": "governance",
+          "priority": "P1",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.material_events",
+          "name": "重大訊息與法規風險",
+          "category": "material_events",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.news",
+          "name": "新聞與非結構化資料",
+          "category": "news",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.supply_chain",
+          "name": "產業與供應鏈",
+          "category": "supply_chain",
+          "priority": "P1",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.industry_specific",
+          "name": "產業專屬資料",
+          "category": "industry_specific",
+          "priority": "P1",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.peers",
+          "name": "同業比較",
+          "category": "peers",
+          "priority": "P1",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.macro_derivatives",
+          "name": "大盤、國際、衍生品與被動資金",
+          "category": "macro_derivatives",
+          "priority": "P0",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "category.alternative",
+          "name": "政府與替代公開資料",
+          "category": "alternative",
+          "priority": "P2",
+          "implementation": "planned",
+          "status": "missing",
+          "reason": "not_implemented",
+          "source_id": null,
+          "observed_at": null
+        },
+        {
+          "field_id": "identity.symbol",
+          "name": "股票代號",
+          "category": "identity",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "identity.name",
+          "name": "股票名稱",
+          "category": "identity",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.open",
+          "name": "開盤價",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.high",
+          "name": "最高價",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.low",
+          "name": "最低價",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.close",
+          "name": "收盤價",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.change",
+          "name": "漲跌價差",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.volume",
+          "name": "成交股數",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.value",
+          "name": "成交金額",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "market.transactions",
+          "name": "成交筆數",
+          "category": "market",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "available",
+          "reason": "official_payload",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.215598+00:00"
+        },
+        {
+          "field_id": "institutional.foreign.buy",
+          "name": "外資買進股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.foreign.sell",
+          "name": "外資賣出股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.foreign.net",
+          "name": "外資買賣超股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.trust.buy",
+          "name": "投信買進股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.trust.sell",
+          "name": "投信賣出股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.trust.net",
+          "name": "投信買賣超股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.dealer.buy",
+          "name": "自營商買進股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.dealer.sell",
+          "name": "自營商賣出股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "institutional.dealer.net",
+          "name": "自營商買賣超股數",
+          "category": "institutional",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "failed",
+          "reason": "官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216002+00:00"
+        },
+        {
+          "field_id": "margin.financing.previous_balance",
+          "name": "融資前日餘額",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.financing.buy",
+          "name": "融資買進",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.financing.sell",
+          "name": "融資賣出",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.financing.cash_redemption",
+          "name": "融資現金償還",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.financing.balance",
+          "name": "融資今日餘額",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.short.previous_balance",
+          "name": "融券前日餘額",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.short.sell",
+          "name": "融券賣出",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.short.buy",
+          "name": "融券買進",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.short.stock_redemption",
+          "name": "融券現券償還",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        },
+        {
+          "field_id": "margin.short.balance",
+          "name": "融券今日餘額",
+          "category": "margin",
+          "priority": "P0",
+          "implementation": "implemented",
+          "status": "unverified",
+          "reason": "official_source_time_unverified",
+          "source_id": "twse_openapi",
+          "observed_at": "2026-10-17T07:16:47.216360+00:00"
+        }
+      ]
+    },
+    "warnings": [
+      "twse_institutional 不可用欄位：institutional.dealer.buy, institutional.dealer.net, institutional.dealer.sell, institutional.foreign.buy, institutional.foreign.net, institutional.foreign.sell, institutional.trust.buy, institutional.trust.net, institutional.trust.sell",
+      "twse_institutional 失敗：官方來源請求失敗 https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALLBUT0999: <urlopen error Tunnel connection failed: 403 Forbidden>",
+      "twse_margin 回應缺少可驗證資料日期",
+      "尚未涵蓋的 P0 類別：股票與公司身分、價格與成交資料、成交量、量價與市場微結構、技術面與價格統計、三大法人、融資、融券、借券與當沖、月營收、損益表、資產負債表、現金流量表、財務品質與安全性、估值與市場預期、公司行動、重大訊息與法規風險、新聞與非結構化資料、大盤、國際、衍生品與被動資金"
+    ],
+    "market_conflicts": [],
+    "persistence": {
+      "run_id": null,
+      "database": null,
+      "saved": false
+    },
+    "disclaimer": "僅供研究與決策輔助；不是即時報價、投資建議或獲利保證。"
+  }
+}

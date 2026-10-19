@@ -1,5 +1,29 @@
 [matrix]
-version = "0.3.0"
+version = "0.5.0"
+
+[[requirements]]
+id = "REQ-DEGRADED-001"
+statement = "Yahoo／技術不可用仍保留官方資料、逐欄缺漏、錯誤與研究紀錄；市場不明不猜測，無技術分析禁止正式交易決策"
+catalog_prefixes = ["category.technical", "identity.", "market.", "material_events."]
+implementation = ["src/tw_stock_swing/research.py", "src/tw_stock_swing/sources/company.py", "src/tw_stock_swing/formatting.py"]
+tests = ["tests/test_research_degradation.py"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-SELECTION-001"
+statement = "初篩流動性、量價、完整調整基準、疑似缺列、唯一證券排名、幣別類型與成交一致性；完整日曆／公司行動仍待完成，失敗隔離見 REQ-DEGRADED-001"
+catalog_prefixes = ["category.market", "category.volume_structure", "category.technical", "identity."]
+implementation = ["SELECTION_POLICY.md", "src/tw_stock_swing/analysis.py", "src/tw_stock_swing/models.py", "src/tw_stock_swing/providers.py", "src/tw_stock_swing/cli.py", "src/tw_stock_swing/research.py", "src/tw_stock_swing/sources/official.py"]
+tests = ["tests/test_selection_safety.py"]
+status = "partial"
+
+[[requirements]]
+id = "REQ-COMPANY-001"
+statement = "公司主檔六項與公告六項 metadata 契約、時間驗證、版本去重、缺漏揭露及研究落庫；不等於完整身分與重大事件研究"
+catalog_prefixes = ["identity.legal_name", "identity.english_abbreviation", "identity.industry_code", "identity.listing_date", "identity.paid_in_capital", "identity.issue_shares_or_tdr_underlying", "material_events."]
+implementation = ["src/tw_stock_swing/sources/company.py", "src/tw_stock_swing/research.py", "src/tw_stock_swing/storage.py", "src/tw_stock_swing/cli.py"]
+tests = ["tests/test_company_sources.py"]
+status = "partial"
 
 [[requirements]]
 id = "REQ-DATA-001"
@@ -63,6 +87,15 @@ statement = "現有 analyze 與 scan CLI 不被破壞"
 catalog_prefixes = []
 implementation = ["src/tw_stock_swing/cli.py"]
 tests = ["tests/test_cli.py", "tests/test_analysis.py"]
+status = "implemented"
+
+[[requirements]]
+id = "REQ-AUDIT-001"
+statement = "A01–A09：同基準報酬、截止時間、有限值、品質狀態、UTC、部分失敗、交易遮罩、股票身分及官方一致性"
+audit_findings = ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09"]
+catalog_prefixes = ["market.", "institutional.", "category."]
+implementation = ["src/tw_stock_swing/analysis.py", "src/tw_stock_swing/providers.py", "src/tw_stock_swing/sources/official.py", "src/tw_stock_swing/research.py", "src/tw_stock_swing/storage.py", "src/tw_stock_swing/models.py", "src/tw_stock_swing/cli.py"]
+tests = ["tests/test_audit_regressions.py"]
 status = "implemented"
 
 [[requirements]]

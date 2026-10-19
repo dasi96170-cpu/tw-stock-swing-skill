@@ -93,6 +93,12 @@ class YahooFinanceProvider:
         return self._parse(payload, symbol)
 
     def _parse(self, payload: dict[str, Any], requested_symbol: str) -> MarketData:
+        try:
+            return self._parse_payload(payload, requested_symbol)
+        except (TypeError, ValueError, KeyError, IndexError, AttributeError, OverflowError, OSError) as exc:
+            raise DataProviderError(f"Yahoo 資料格式或數值錯誤：{exc}") from exc
+
+    def _parse_payload(self, payload: dict[str, Any], requested_symbol: str) -> MarketData:
         chart = payload.get("chart") or {}
         if chart.get("error"):
             description = chart["error"].get("description", "未知資料錯誤")
@@ -101,6 +107,12 @@ class YahooFinanceProvider:
         if not results:
             raise DataProviderError("查無資料")
         result = results[0]
+        meta = result.get("meta") or {}
+        symbol = str(meta.get("symbol") or "").upper()
+        if symbol != requested_symbol.upper():
+            raise DataProviderError(f"股票身分不一致：請求 {requested_symbol}，回應 {symbol or '缺少代號'}")
+        if meta.get("currency") != "TWD" or meta.get("instrumentType") != "EQUITY":
+            raise DataProviderError("幣別／證券類型未通過：目前僅接受明確標示 TWD／EQUITY 的台股日線")
         timestamps = result.get("timestamp") or []
         indicators = result.get("indicators") or {}
         quotes = (indicators.get("quote") or [{}])[0]
@@ -108,13 +120,23 @@ class YahooFinanceProvider:
         fields = {key: quotes.get(key) or [] for key in ("open", "high", "low", "close", "volume")}
         timezone = ZoneInfo("Asia/Taipei")
         bars: list[PriceBar] = []
+        issues: list[str] = []
+        for field, values in fields.items():
+            if len(values) != len(timestamps):
+                issues.append(f"{field}: 欄位長度與 timestamp 不一致")
+        if adjusted and len(adjusted) != len(timestamps):
+            issues.append("adjclose: 欄位長度與 timestamp 不一致")
         for index, timestamp in enumerate(timestamps):
             try:
                 values = {key: fields[key][index] for key in fields}
             except IndexError:
+                issues.append(f"row={index}, timestamp={timestamp}: 欄位長度不一致")
                 continue
             if any(value is None for value in values.values()):
+                issues.append(f"row={index}, timestamp={timestamp}: OHLCV 缺值")
                 continue
+            if any(isinstance(value, bool) for value in values.values()):
+                raise DataProviderError(f"row={index}: OHLCV 不可為布林值")
             high = float(values["high"])
             low = float(values["low"])
             close = float(values["close"])
@@ -126,7 +148,11 @@ class YahooFinanceProvider:
                 or not low <= open_price <= high
                 or not low <= close <= high
             ):
+                issues.append(f"row={index}, timestamp={timestamp}: OHLC 無效")
                 continue
+            volume = float(values["volume"])
+            if isinstance(values["volume"], bool) or not math.isfinite(volume) or volume < 0 or not volume.is_integer():
+                raise DataProviderError(f"row={index}: 成交量必須是非負有限整數")
             bars.append(
                 PriceBar(
                     date=datetime.fromtimestamp(timestamp, tz=timezone).date(),
@@ -134,7 +160,7 @@ class YahooFinanceProvider:
                     high=high,
                     low=low,
                     close=close,
-                    volume=int(values["volume"]),
+                    volume=int(volume),
                     adjusted_close=(
                         float(adjusted[index])
                         if index < len(adjusted) and adjusted[index] is not None
@@ -145,7 +171,6 @@ class YahooFinanceProvider:
         if not bars:
             raise DataProviderError("沒有有效日線資料")
         bars.sort(key=lambda bar: bar.date)
-        meta = result.get("meta") or {}
-        symbol = str(meta.get("symbol") or requested_symbol).upper()
         name = str(meta.get("longName") or meta.get("shortName") or symbol)
-        return MarketData(symbol=symbol, name=name, bars=tuple(bars), source=self.source_name)
+        return MarketData(symbol=symbol, name=name, bars=tuple(bars), source=self.source_name,
+                          quality_issues=tuple(issues))

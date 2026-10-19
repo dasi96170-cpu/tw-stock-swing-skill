@@ -1,0 +1,46 @@
+[
+  {
+    "connector_id": "twse_announcements",
+    "endpoint": "https://openapi.twse.com.tw/v1/opendata/t187ap04_L",
+    "symbol": "2072",
+    "fetched_at": "2026-10-18T10:04:26.545897+00:00",
+    "content_hash": "f7548e98f1a67f1aa3c83be1d0fc1ebad83ab101d068fdf60e820a147c5a7d43",
+    "source_date": "2026-10-18",
+    "event_count": 1,
+    "status": "parsed",
+    "coverage": {
+      "material_events.announcements": "available",
+      "material_events.event_date": "available",
+      "material_events.headline": "available",
+      "material_events.published_at": "available",
+      "material_events.revision_hash": "available",
+      "material_events.source_locator": "available"
+    },
+    "issues": [],
+    "event_issues": [
+      []
+    ]
+  },
+  {
+    "connector_id": "tpex_announcements",
+    "endpoint": "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap04_O",
+    "symbol": "4747",
+    "fetched_at": "2026-10-18T10:04:27.951742+00:00",
+    "content_hash": "2dc0299117bcd2a9ff57c6f75ce9d3636da4ebfef01706e11cc0f2b2a00b9c72",
+    "source_date": "2026-10-18",
+    "event_count": 1,
+    "status": "parsed",
+    "coverage": {
+      "material_events.announcements": "available",
+      "material_events.event_date": "available",
+      "material_events.headline": "available",
+      "material_events.published_at": "available",
+      "material_events.revision_hash": "available",
+      "material_events.source_locator": "available"
+    },
+    "issues": [],
+    "event_issues": [
+      []
+    ]
+  }
+]

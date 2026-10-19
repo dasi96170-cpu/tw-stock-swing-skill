@@ -1,7 +1,7 @@
 [catalog]
-version = "0.3.0"
-checked_at = "2026-10-17T10:38:00+08:00"
-validation_note = "六個官方連接器曾取得真實抽樣並通過欄位 schema；2026-10-17 重查 5/6 可連線，TWSE T86 被本雲端網路隧道拒絕。這不代表永久可用、授權完成或資料永遠新鮮。"
+version = "0.4.0"
+checked_at = "2026-10-18T18:04:28+08:00"
+validation_note = "2026-10-18 公司主檔與公告四個新增端點實測通過解析；無匹配公告仍 partial，另驗證有公告樣本。原六端點歷史驗證及後續失敗見 SOURCE_VALIDATION.md，不代表十端點同時可用、授權完成或資料永遠新鮮。"
 
 [[sources]]
 id = "twse_openapi"
@@ -16,7 +16,7 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "schema_validated_3_of_3_availability_variable"
+live_validation = "original_3_schema_validated_availability_variable; company_2_sampled_2026_10_18"
 last_live_check = "2026-10-17: market_ok, margin_ok, institutional_environment_tunnel_403"
 
 [[sources.endpoints]]
@@ -37,6 +37,22 @@ path = "/exchangeReport/MI_MARGN"
 categories = ["margin"]
 connector = "twse_margin"
 
+[[sources.endpoints]]
+id = "twse.company.profile"
+path = "/opendata/t187ap03_L"
+categories = ["identity"]
+connector = "twse_profile"
+validation = "live_shape_sampled; see audit/company_source_shapes.json and company_live_twse.json"
+storage_scope = "selected structured fields; no personal contact fields"
+
+[[sources.endpoints]]
+id = "twse.company.announcements"
+path = "/opendata/t187ap04_L"
+categories = ["material_events"]
+connector = "twse_announcements"
+validation = "live_shape_sampled; latest snapshot, not a historical archive"
+storage_scope = "headline, dates, source locator and hashes only; body not retained; redistribution rights not verified"
+
 [[sources]]
 id = "tpex_openapi"
 name = "證券櫃檯買賣中心 OpenAPI"
@@ -50,7 +66,7 @@ history = "本批端點以近期/當日橫截面為主；歷史範圍需逐端�
 update_schedule = "交易日收盤後；實際發布時間需監測"
 priority = 1
 fallback_sources = []
-live_validation = "schema_validated_3_of_3_availability_variable"
+live_validation = "original_3_schema_validated_availability_variable; company_2_sampled_2026_10_18"
 last_live_check = "2026-10-17: 3_of_3_reachable_and_schema_complete"
 
 [[sources.endpoints]]
@@ -70,6 +86,22 @@ id = "tpex.margin.daily"
 path = "/tpex_mainboard_margin_balance"
 categories = ["margin"]
 connector = "tpex_margin"
+
+[[sources.endpoints]]
+id = "tpex.company.profile"
+path = "/mopsfin_t187ap03_O"
+categories = ["identity"]
+connector = "tpex_profile"
+validation = "live_shape_sampled; see audit/company_source_shapes.json and company_live_tpex.json"
+storage_scope = "selected structured fields; no personal contact fields"
+
+[[sources.endpoints]]
+id = "tpex.company.announcements"
+path = "/mopsfin_t187ap04_O"
+categories = ["material_events"]
+connector = "tpex_announcements"
+validation = "live_shape_sampled; latest snapshot, not a historical archive"
+storage_scope = "headline, dates, source locator and hashes only; body not retained; redistribution rights not verified"
 
 [[sources]]
 id = "yahoo_finance"
